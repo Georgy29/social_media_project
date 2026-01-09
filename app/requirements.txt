@@ -1,3 +1,5 @@
 fastapi[standard]==0.113.0
 sqlalchemy==2.0.20
 alembic==1.13.2
+pyjwt==2.8.0
+passlib[bcrypt]==1.7.4

@@ -10,15 +10,14 @@ from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime, timezone
 
-# Defiine follow assisciation table before the User class to avoid reference issues
+# Define follow association table before the User class to avoid reference issues
 Follow = Table(
     "follows",
     Base.metadata,
     Column("follower_id", Integer, ForeignKey("users.id"), primary_key=True),
     Column("followee_id", Integer, ForeignKey("users.id"), primary_key=True)
 )
-# add that user cant follow themselves constraint
-# add unique constraint to prevent duplicate follows
+
 
 class User(Base):
     __tablename__ = "users"
@@ -26,7 +25,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_pasword = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     posts = relationship("Post", back_populates="owner")

@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Annotated
 from datetime import timedelta, datetime, timezone
-import exceptions
 
-from .. import models, schemas, auth
+
+from .. import models, schemas, auth, exceptions
 from ..database import get_db
 
 router = APIRouter(

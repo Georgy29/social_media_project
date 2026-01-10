@@ -1,8 +1,7 @@
 from pathlib import Path
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker 
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 BASE_DIR = Path(__file__).resolve().parent.parent 
 DB_FILE = BASE_DIR / "microblog.db"
@@ -15,9 +14,7 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Declarative base class creates the base for our models to inherit from
-class Base(declarative_base()):
-    pass
+Base = declarative_base()
 
 
 def get_db():

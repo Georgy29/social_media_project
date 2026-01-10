@@ -14,7 +14,7 @@ class User(UserBase):
     created_at: datetime
     
 # allows the model to be initialized using objects
-# or ORM-like attributes intead of just plain dictionaries
+# or ORM-like attributes instead of just plain dictionaries
     class Config:
         from_attributes = True
         

@@ -1,14 +1,9 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    ForeignKey,
-    Table
-)
+﻿from datetime import datetime, timezone
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import relationship
+
 from .database import Base
-from datetime import datetime, timezone
 
 # Define the Follow association table before the User class
 Follow = Table(
@@ -17,6 +12,7 @@ Follow = Table(
     Column("follower_id", Integer, ForeignKey("users.id"), primary_key=True),
     Column("followee_id", Integer, ForeignKey("users.id"), primary_key=True),
 )
+
 
 class User(Base):
     __tablename__ = "users"
@@ -37,6 +33,7 @@ class User(Base):
         backref="following",
     )
 
+
 class Post(Base):
     __tablename__ = "posts"
 
@@ -46,23 +43,35 @@ class Post(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="posts")
-    likes = relationship("Like", back_populates="post")
-    retweets = relationship("Retweet", back_populates="post")
+    likes = relationship(
+        "Like",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    retweets = relationship(
+        "Retweet",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
 
 class Like(Base):
     __tablename__ = "likes"
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    post_id = Column(Integer, ForeignKey("posts.id"), primary_key=True)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
 
     user = relationship("User")
     post = relationship("Post", back_populates="likes")
+
 
 class Retweet(Base):
     __tablename__ = "retweets"
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    post_id = Column(Integer, ForeignKey("posts.id"), primary_key=True)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
     timestamp = Column(DateTime, default=datetime.now(timezone.utc))
 
     user = relationship("User")

@@ -7,9 +7,6 @@ from .models import Base
 from .routers import users, posts, auth
 
 
-
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
 
 app.add_middleware(

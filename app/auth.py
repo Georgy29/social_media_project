@@ -8,12 +8,13 @@ from jwt import PyJWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from . import settings 
 from . import models, schemas
 from .database import get_db
 
-SECRET_KEY = "your-secret-key"
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(
     schemes=["pbkdf2_sha256", "bcrypt_sha256", "bcrypt"],
@@ -44,7 +45,7 @@ async def get_current_user(
     )
 
     try:
-        payload= jwt.decode(token, SECRET_KEY, algorithms={ALGORITHM})
+        payload= jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: Optional[str] = payload.get("sub")
         if username is None:
             raise credentials_exception

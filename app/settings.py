@@ -1,8 +1,10 @@
-# app/settings.py
-import os
+﻿import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-load_dotenv()  # loads .env from current working dir by default
+# Load repo-root .env (sibling of the app/ directory).
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./microblog.db")
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")

@@ -17,7 +17,7 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
-    alllow_headers=["*"],   
+    allow_headers=["*"],   
 )
 
 # Include routers

@@ -17,6 +17,10 @@ router = APIRouter(
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+@router.get("/me", response_model=schemas.User)
+def read_me(current_user: models.User = Depends(auth.get_current_user)):
+    return current_user
+    
 # User Registration Endpoint
 @router.post("/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: db_dependency):

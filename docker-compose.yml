@@ -9,11 +9,18 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d microblog"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
     build: .
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
@@ -21,6 +28,9 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
       CORS_ORIGINS: ${CORS_ORIGINS}
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
 volumes:
   pgdata:

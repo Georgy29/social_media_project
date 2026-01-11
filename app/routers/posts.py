@@ -170,7 +170,13 @@ def unretweet_post(
     return
 
 
-@router.get("/with_counts/", response_model=List[schemas.PostWithCounts])
+@router.get(
+    "/with_counts/", 
+    response_model=List[schemas.PostWithCounts],
+    summary="Feed with reaction counts",
+    description="Returns posts ordered by newest first, including owner username and like/retweet counts.",
+    responses={200: {"description": "List of posts with counts"}},
+)
 def read_posts_with_counts(db: db_dependency):
     likes_subq = (
         db.query(models.Like.post_id, func.count(models.Like.user_id).label("likes_count"))

@@ -17,7 +17,13 @@ router = APIRouter(
 db_dependency = Annotated[Session, Depends(get_db)]
 
 #Login Endpoint
-@router.post("/token", response_model=schemas.Token)
+@router.post(
+    "/token",
+    response_model=schemas.Token,
+    summary="Login",
+    description="Exchanges username/password for a JWT access token.",
+    responses={401: {"description": "Incorrect username or password"}},    
+    )
 def login_for_access_token(
     db: db_dependency, form_data: OAuth2PasswordRequestForm = Depends()
 ):

@@ -22,3 +22,4 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+mikroblog.db

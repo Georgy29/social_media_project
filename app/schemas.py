@@ -46,6 +46,8 @@ class PostWithCounts(Post):
     likes_count: int
     retweets_count: int
     owner_username: str
+    is_liked: bool
+    is_retweeted: bool
     
 class PostUpdate(BaseModel):
     content: str 

@@ -1,4 +1,4 @@
-# Social Media MVP (Backend)
+# Social Media MVP (In progress)
 
 ## Quickstart (Docker + Postgres)
 1) Create `.env` from the example:

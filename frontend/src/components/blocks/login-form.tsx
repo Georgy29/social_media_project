@@ -11,6 +11,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { SocialFlipCard } from "@/components/blocks/social-flip-card";
 
 export type LoginFormValues = {
   username: string;
@@ -44,9 +45,9 @@ export function LoginForm({
           >
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Welcome back</h1>
+                <h1 className="text-2xl font-bold">Welcome back to Repost</h1>
                 <p className="text-muted-foreground text-balance">
-                  Login to your Acme Inc account
+                  Login to my demo Social Media App
                 </p>
               </div>
               <Field>
@@ -131,12 +132,8 @@ export function LoginForm({
               </FieldDescription>
             </FieldGroup>
           </form>
-          <div className="bg-muted relative hidden md:block">
-            <img
-              src="/biglogo.svg"
-              alt="Image"
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-            />
+          <div className="bg-muted hidden h-full w-full items-stretch overflow-hidden md:flex md:border-l md:border-border">
+            <SocialFlipCard className="h-full w-full" />
           </div>
         </CardContent>
       </Card>

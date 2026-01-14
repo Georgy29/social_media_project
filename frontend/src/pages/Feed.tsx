@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button"
 
 import {
   useCreatePostMutation,
+  useDeletePostMutation,
   useFeedQuery,
   useLogout,
   useMeQuery,
   useToggleLikeMutation,
   useToggleRetweetMutation,
+  useUpdatePostMutation,
 } from "@/api/queries"
 
 export default function FeedPage() {
@@ -28,11 +30,15 @@ export default function FeedPage() {
 
   const feedQuery = useFeedQuery(params)
   const createPostMutation = useCreatePostMutation()
+  const updatePostMutation = useUpdatePostMutation()
+  const deletePostMutation = useDeletePostMutation()
   const toggleLikeMutation = useToggleLikeMutation()
   const toggleRetweetMutation = useToggleRetweetMutation()
 
   const isMutating =
     createPostMutation.isPending ||
+    updatePostMutation.isPending ||
+    deletePostMutation.isPending ||
     toggleLikeMutation.isPending ||
     toggleRetweetMutation.isPending
 
@@ -76,6 +82,7 @@ export default function FeedPage() {
               key={post.id}
               post={post}
               pending={isMutating}
+              isOwner={meQuery.data?.id === post.owner_id}
               onToggleLike={(p) =>
                 toggleLikeMutation.mutate({
                   postId: p.id,
@@ -88,6 +95,13 @@ export default function FeedPage() {
                   isRetweeted: p.is_retweeted,
                 })
               }
+              onUpdate={(postId, content) =>
+                updatePostMutation.mutateAsync({
+                  postId,
+                  payload: { content },
+                })
+              }
+              onDelete={(postId) => deletePostMutation.mutateAsync({ postId })}
             />
           ))}
         </div>

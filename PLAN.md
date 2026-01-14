@@ -109,32 +109,49 @@ Goal: public URLs exist and the README points to them.
   - demo credentials (if used)
   - known limitations (free-tier sleep/cold start)
 
-## Phase 2 — Extras (portfolio “20% extra” lives here)
-Pick 1–2 after Milestone 3.
+## Phase 2 — Portfolio Upgrades (“20% harder”)
+Pick 1 product feature + 1 backend credibility upgrade.
 
-### Product features
-- [ ] User avatars
-  - [ ] store `avatar_url` on user profile
-  - [ ] `PATCH /users/me` to update avatar URL
-  - [ ] serve a default placeholder when missing
-- [ ] User profile page
-  - [ ] `GET /users/{id}` or `GET /users/{username}`
-  - [ ] show user info + their posts
-  - [ ] follow/unfollow from profile
-- [ ] Comments
-  - [ ] comment model + endpoints
-  - [ ] show under post + basic moderation (optional)
-- [ ] Media attachments (images/videos)
-  - [ ] upload flow via object storage (S3/R2/etc.)
-  - [ ] store metadata in DB
-  - [ ] render media in feed
+### Product features (high signal)
+- [ ] Avatar system (no uploads yet)
+  - [ ] DB: add `users.avatar_kind` + `users.avatar_value` (or `users.avatar_key`)
+  - [ ] Static assets: ship a pool of animal PNGs (server-hosted)
+  - [ ] `GET /avatars` (public): list available avatar keys + URLs (+ optional gradients list)
+  - [ ] Register flow: allow choosing avatar (either in `UserCreate` or via `PUT /users/me/avatar`)
+  - [ ] Frontend: register page fetches `/avatars`, user chooses gradient/animal; show avatar in UI
+- [ ] Profile page + timeline (posts + reposts)
+  - [ ] `GET /users/{username}` (public): profile + counts
+  - [ ] `GET /users/{username}/timeline?skip&limit`: return user posts + reposts of others
+  - [ ] Frontend: left nav item “Profile”; profile view with tabs “Posts / Reposts”
+- [ ] Media uploads (portfolio path: presigned, not multipart)
+  - [ ] Add MinIO to `docker-compose.yml` for local S3-compatible storage
+  - [ ] DB: `media` table (id, owner_id, storage_key, public_url, mime, size, created_at, status)
+  - [ ] `POST /media/presign` (auth): returns `{ media_id, upload_url, public_url }`
+  - [ ] Optional: `POST /media/{id}/complete` to verify object exists and mark ready
+  - [ ] Posts: allow attaching optional `media_id` (start with 1 image per post)
+  - [ ] Frontend: CreatePost supports selecting image → presign → upload → create post
+  - [ ] Storage abstraction: `STORAGE_BACKEND=local|minio|imagekit` (same API, different implementation)
+  - [ ] Optional thumbnails: generate + store thumbnail URLs
+- [ ] Seed/demo data (makes the project “tryable”)
+  - [ ] Script: create demo users, posts, likes, reposts (and optional media)
+  - [ ] Document “reset DB + seed” workflow in README
 
-### Backend credibility upgrades
-- [ ] Refresh tokens + logout/revoke
-- [ ] Rate limiting on auth + write endpoints
-- [ ] Reactions hardening: make like/retweet idempotent (`PUT`/`DELETE`) and keep semantics consistent
-- [ ] Role-based permissions (admin/mod)
-- [ ] Observability: request IDs + structured logs
+### Backend credibility upgrades (pick 1–2)
+- [ ] Rate limiting (Redis-backed)
+  - [ ] Protect `/token`, `/users/`, and write endpoints (posts, reactions, media presign)
+  - [ ] Add per-IP + per-user limits and clear error responses
+- [ ] Reactions hardening (idempotent semantics + spam safety)
+  - [ ] Switch to `PUT /posts/{id}/like` + `DELETE /posts/{id}/like` (same for repost)
+  - [ ] Frontend: disable buttons while mutations are in-flight; optional optimistic toggles later
+- [ ] Background jobs (for “real backend” feel)
+  - [ ] Add a worker (RQ/Celery/arq) for thumbnails / cleanup / email
+  - [ ] Add a simple job status endpoint if needed
+
+### Nice-to-have backend “portfolio” features (optional list)
+- [ ] Observability: request IDs + structured logs + Sentry/OpenTelemetry
+- [ ] Search: Postgres full-text search for posts/users
+- [ ] Email verification + password reset (token flow)
+- [ ] Admin/moderation endpoints (delete/hide posts, ban users)
 
 ### AI (optional, one endpoint)
 - [ ] Feature-flagged “moderate post content” OR “summarize feed”

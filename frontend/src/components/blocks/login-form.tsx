@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,15 +11,37 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+
+export type LoginFormValues = {
+  username: string;
+  password: string;
+};
+
 export function LoginForm({
   className,
+  onLogin,
+  pending = false,
+  error,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & {
+  onLogin: (values: LoginFormValues) => void;
+  pending?: boolean;
+  error?: string | null;
+}) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8">
+          <form
+            className="p-6 md:p-8"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onLogin({ username, password });
+            }}
+          >
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Welcome back</h1>
@@ -26,11 +50,13 @@ export function LoginForm({
                 </p>
               </div>
               <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="username">Username</FieldLabel>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
+                  id="username"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="yourname"
                   required
                 />
               </Field>
@@ -44,10 +70,24 @@ export function LoginForm({
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </Field>
               <Field>
-                <Button type="submit">Login</Button>
+                <Button type="submit" disabled={pending}>
+                  {pending ? "Logging in…" : "Login"}
+                </Button>
+                {error ? (
+                  <FieldDescription className="text-destructive">
+                    {error}
+                  </FieldDescription>
+                ) : null}
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 Or continue with
@@ -82,7 +122,10 @@ export function LoginForm({
                 </Button>
               </Field>
               <FieldDescription className="text-center">
-                Don&apos;t have an account? <a href="#">Sign up</a>
+                Don&apos;t have an account?{" "}
+                <Link to="/register" className="underline underline-offset-4">
+                  Sign up
+                </Link>
               </FieldDescription>
             </FieldGroup>
           </form>

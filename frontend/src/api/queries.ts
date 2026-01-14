@@ -42,9 +42,23 @@ export const queryKeys = {
 } as const
 
 export function useMeQuery() {
+  const queryClient = useQueryClient()
+
   return useQuery<User, ApiError>({
     queryKey: queryKeys.me,
-    queryFn: getMe,
+    queryFn: async () => {
+      try {
+        return await getMe()
+      } catch (e) {
+        const err = e as ApiError
+        if (err.status === 401) {
+          clearToken()
+          queryClient.removeQueries({ queryKey: queryKeys.me })
+          queryClient.removeQueries({ queryKey: queryKeys.feed.root })
+        }
+        throw err
+      }
+    },
     enabled: Boolean(getToken()),
     retry: false,
   })

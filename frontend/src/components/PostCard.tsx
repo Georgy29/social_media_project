@@ -1,7 +1,10 @@
 import { useState } from "react"
+import { IconHeart, IconHeartFilled, IconRepeat } from "@tabler/icons-react"
 
 import type { components } from "@/api/types"
 
+import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -41,12 +44,26 @@ export function PostCard({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(post.content)
   const [error, setError] = useState<string | null>(null)
+  const [likeBurst, setLikeBurst] = useState(0)
+  const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase()
+
+  const handleToggleLike = () => {
+    setLikeBurst((value) => value + 1)
+    onToggleLike(post)
+  }
 
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <div className="font-medium">@{post.owner_username}</div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Avatar className="size-9">
+              <AvatarFallback className="text-xs font-semibold">
+                {avatarLabel}
+              </AvatarFallback>
+            </Avatar>
+            <div className="font-medium">@{post.owner_username}</div>
+          </div>
           <div className="text-muted-foreground text-xs">{timeLabel}</div>
         </div>
       </CardHeader>
@@ -98,20 +115,49 @@ export function PostCard({
       </CardContent>
       <CardFooter className="flex flex-wrap gap-2">
         <Button
-          variant={post.is_liked ? "default" : "outline"}
           size="sm"
           disabled={pending}
-          onClick={() => onToggleLike(post)}
+          variant="outline"
+          aria-pressed={post.is_liked}
+          aria-label={post.is_liked ? "Unlike post" : "Like post"}
+          className="gap-2"
+          onClick={handleToggleLike}
         >
-          {post.is_liked ? "Liked" : "Like"} ({post.likes_count})
+          <span
+            key={likeBurst}
+            className={cn(
+              "flex items-center",
+              likeBurst > 0 ? "motion-safe:animate-heart-pop" : "",
+            )}
+          >
+            {post.is_liked ? (
+              <IconHeartFilled className="text-rose-500" />
+            ) : (
+              <IconHeart className="text-muted-foreground" />
+            )}
+          </span>
+          <span className="text-xs font-medium tabular-nums">
+            {post.likes_count}
+          </span>
         </Button>
         <Button
-          variant={post.is_retweeted ? "default" : "outline"}
           size="sm"
           disabled={pending}
+          variant="outline"
+          aria-pressed={post.is_retweeted}
+          aria-label={post.is_retweeted ? "Undo repost" : "Repost"}
+          className="gap-2"
           onClick={() => onToggleRetweet(post)}
         >
-          {post.is_retweeted ? "Reposted" : "Repost"} ({post.retweets_count})
+          <IconRepeat
+            className={cn(
+              "text-muted-foreground",
+              post.is_retweeted ? "text-emerald-600" : "",
+            )}
+          />
+          <span className="text-xs font-medium tabular-nums">
+            {post.retweets_count}
+          </span>
         </Button>
         {isOwner ? (
           <>

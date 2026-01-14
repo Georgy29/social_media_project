@@ -116,6 +116,27 @@
     --radius-4xl: calc(var(--radius) + 16px);
 }
 
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.25);
+  }
+  60% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@layer utilities {
+  .animate-heart-pop {
+    animation: heart-pop 280ms ease-out;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

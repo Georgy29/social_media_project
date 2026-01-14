@@ -27,6 +27,7 @@ export function CreatePost({
           onChange={(e) => setContent(e.target.value)}
           placeholder="What’s happening?"
           rows={3}
+          disabled={pending}
         />
         <div className="flex justify-end">
           <Button
@@ -43,4 +44,3 @@ export function CreatePost({
     </Card>
   )
 }
-

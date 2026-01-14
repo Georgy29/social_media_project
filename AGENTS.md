@@ -1,1 +1,1 @@
-reference frontend/types.ts for schemas
+use shadcn MCP when available

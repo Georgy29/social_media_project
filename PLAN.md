@@ -113,6 +113,10 @@ Goal: public URLs exist and the README points to them.
 Pick 1–2 after Milestone 3.
 
 ### Product features
+- [ ] User avatars
+  - [ ] store `avatar_url` on user profile
+  - [ ] `PATCH /users/me` to update avatar URL
+  - [ ] serve a default placeholder when missing
 - [ ] User profile page
   - [ ] `GET /users/{id}` or `GET /users/{username}`
   - [ ] show user info + their posts

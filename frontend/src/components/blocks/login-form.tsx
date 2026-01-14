@@ -57,6 +57,7 @@ export function LoginForm({
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="yourname"
+                  disabled={pending}
                   required
                 />
               </Field>
@@ -76,6 +77,7 @@ export function LoginForm({
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={pending}
                   required
                 />
               </Field>
@@ -131,7 +133,7 @@ export function LoginForm({
           </form>
           <div className="bg-muted relative hidden md:block">
             <img
-              src="/placeholder.svg"
+              src="/biglogo.svg"
               alt="Image"
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             />

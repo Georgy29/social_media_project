@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
+import { toast } from "sonner";
 
 import { LoginForm } from "@/components/blocks/login-form";
 import { type ApiError } from "@/api/client";
@@ -28,10 +29,12 @@ export default function LoginPage() {
               { username, password },
               {
                 onSuccess: () => {
+                  toast.success("Logged in");
                   navigate(fromPathname, { replace: true });
                 },
                 onError: (e: ApiError) => {
                   setError(e.message);
+                  toast.error(e.message);
                 },
               },
             );

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
 import { IconLayoutGrid } from "@tabler/icons-react"
+import { toast } from "sonner"
 
 import { type ApiError } from "@/api/client"
 import { useRegisterMutation } from "@/api/queries"
@@ -27,8 +28,14 @@ export default function RegisterPage() {
           onSignup={(values) => {
             setError(null)
             registerMutation.mutate(values, {
-              onSuccess: () => navigate("/login", { replace: true }),
-              onError: (e: ApiError) => setError(e.message),
+              onSuccess: () => {
+                toast.success("Account created. Please log in.")
+                navigate("/login", { replace: true })
+              },
+              onError: (e: ApiError) => {
+                setError(e.message)
+                toast.error(e.message)
+              },
             })
           }}
         />

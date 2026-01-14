@@ -70,6 +70,7 @@ export function SignupForm({
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="yourname"
+                  disabled={pending}
                   required
                 />
               </Field>
@@ -82,6 +83,7 @@ export function SignupForm({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="m@example.com"
+                  disabled={pending}
                   required
                 />
               </Field>
@@ -95,6 +97,7 @@ export function SignupForm({
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      disabled={pending}
                       required
                     />
                   </Field>
@@ -108,6 +111,7 @@ export function SignupForm({
                       autoComplete="new-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={pending}
                       required
                     />
                   </Field>

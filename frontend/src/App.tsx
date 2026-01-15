@@ -24,7 +24,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   if (meQuery.isPending) {
     return (
       <div className="text-muted-foreground flex min-h-svh items-center justify-center">
-        Loading…
+        Loading...
       </div>
     );
   }
@@ -53,7 +53,7 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
   if (meQuery.isPending) {
     return (
       <div className="text-muted-foreground flex min-h-svh items-center justify-center">
-        Loading…
+        Loading...
       </div>
     );
   }

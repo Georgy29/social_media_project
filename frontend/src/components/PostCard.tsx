@@ -1,5 +1,15 @@
 import { useState } from "react"
-import { IconHeart, IconHeartFilled, IconRepeat } from "@tabler/icons-react"
+import {
+  IconBookmark,
+  IconBookmarkFilled,
+  IconDotsVertical,
+  IconEdit,
+  IconHeart,
+  IconHeartFilled,
+  IconRepeat,
+  IconTrash,
+} from "@tabler/icons-react"
+import { toast } from "sonner"
 
 import type { components } from "@/api/types"
 
@@ -7,6 +17,12 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Textarea } from "@/components/ui/textarea"
 import {
   AlertDialog,
@@ -26,6 +42,7 @@ export function PostCard({
   post,
   onToggleLike,
   onToggleRetweet,
+  onToggleBookmark,
   onDelete,
   onUpdate,
   isOwner = false,
@@ -36,6 +53,7 @@ export function PostCard({
   isOwner?: boolean
   onToggleLike: (post: PostWithCounts) => void
   onToggleRetweet: (post: PostWithCounts) => void
+  onToggleBookmark?: (post: PostWithCounts, nextState: boolean) => Promise<void> | void
   onDelete?: (postId: number) => Promise<void>
   onUpdate?: (postId: number, content: string) => Promise<unknown>
 }) {
@@ -45,11 +63,30 @@ export function PostCard({
   const [draft, setDraft] = useState(post.content)
   const [error, setError] = useState<string | null>(null)
   const [likeBurst, setLikeBurst] = useState(0)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [bookmarked, setBookmarked] = useState(false)
+  const [bookmarkBusy, setBookmarkBusy] = useState(false)
   const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase()
 
   const handleToggleLike = () => {
     setLikeBurst((value) => value + 1)
     onToggleLike(post)
+  }
+
+  const handleToggleBookmark = async () => {
+    if (pending || bookmarkBusy) return
+    const nextState = !bookmarked
+    setBookmarked(nextState)
+    setBookmarkBusy(true)
+    try {
+      await onToggleBookmark?.(post, nextState)
+      toast.success(nextState ? "Bookmarked" : "Bookmark removed")
+    } catch {
+      setBookmarked(!nextState)
+      toast.error("Failed to update bookmark")
+    } finally {
+      setBookmarkBusy(false)
+    }
   }
 
   return (
@@ -113,100 +150,135 @@ export function PostCard({
         )}
         {error ? <div className="text-destructive text-sm">{error}</div> : null}
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          disabled={pending}
-          variant="outline"
-          aria-pressed={post.is_liked}
-          aria-label={post.is_liked ? "Unlike post" : "Like post"}
-          className="gap-2"
-          onClick={handleToggleLike}
-        >
-          <span
-            key={likeBurst}
-            className={cn(
-              "flex items-center",
-              likeBurst > 0 ? "motion-safe:animate-heart-pop" : "",
-            )}
+      <CardFooter className="flex items-center gap-2 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Button
+            size="xs"
+            disabled={pending}
+            variant="outline"
+            aria-pressed={post.is_liked}
+            aria-label={post.is_liked ? "Unlike post" : "Like post"}
+            className="gap-2"
+            onClick={handleToggleLike}
           >
-            {post.is_liked ? (
-              <IconHeartFilled className="text-rose-500" />
-            ) : (
-              <IconHeart className="text-muted-foreground" />
-            )}
-          </span>
-          <span className="text-xs font-medium tabular-nums">
-            {post.likes_count}
-          </span>
-        </Button>
-        <Button
-          size="sm"
-          disabled={pending}
-          variant="outline"
-          aria-pressed={post.is_retweeted}
-          aria-label={post.is_retweeted ? "Undo repost" : "Repost"}
-          className="gap-2"
-          onClick={() => onToggleRetweet(post)}
-        >
-          <IconRepeat
-            className={cn(
-              "text-muted-foreground",
-              post.is_retweeted ? "text-emerald-600" : "",
-            )}
-          />
-          <span className="text-xs font-medium tabular-nums">
-            {post.retweets_count}
-          </span>
-        </Button>
-        {isOwner ? (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={() => {
-                setEditing(true)
-                setDraft(post.content)
-                setError(null)
-              }}
+            <span
+              key={likeBurst}
+              className={cn(
+                "flex items-center",
+                likeBurst > 0 ? "motion-safe:animate-heart-pop" : "",
+              )}
             >
-              Edit
-            </Button>
-            {onDelete ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" disabled={pending}>
+              {post.is_liked ? (
+                <IconHeartFilled className="text-rose-500" />
+              ) : (
+                <IconHeart className="text-muted-foreground" />
+              )}
+            </span>
+            <span className="text-xs font-medium tabular-nums">
+              {post.likes_count}
+            </span>
+          </Button>
+          <Button
+            size="xs"
+            disabled={pending}
+            variant="outline"
+            aria-pressed={post.is_retweeted}
+            aria-label={post.is_retweeted ? "Undo repost" : "Repost"}
+            className="gap-2"
+            onClick={() => onToggleRetweet(post)}
+          >
+            <IconRepeat
+              className={cn(
+                "text-muted-foreground",
+                post.is_retweeted ? "text-emerald-600" : "",
+              )}
+            />
+            <span className="text-xs font-medium tabular-nums">
+              {post.retweets_count}
+            </span>
+          </Button>
+          <Button
+            size="xs"
+            disabled={pending || bookmarkBusy}
+            variant="outline"
+            aria-pressed={bookmarked}
+            aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
+            className="gap-2"
+            onClick={handleToggleBookmark}
+          >
+            {bookmarked ? (
+              <IconBookmarkFilled className="text-blue-500" />
+            ) : (
+              <IconBookmark className="text-muted-foreground" />
+            )}
+          </Button>
+        </div>
+        {isOwner ? (
+          <div className="ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Post actions"
+                  disabled={pending}
+                >
+                  <IconDotsVertical className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setEditing(true)
+                    setDraft(post.content)
+                    setError(null)
+                  }}
+                >
+                  <IconEdit className="h-4 w-4" aria-hidden="true" />
+                  Edit
+                </DropdownMenuItem>
+                {onDelete ? (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => setDeleteOpen(true)}
+                  >
+                    <IconTrash className="h-4 w-4" aria-hidden="true" />
                     Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent size="sm">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete post?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={async () => {
-                        try {
-                          await onDelete(post.id)
-                        } catch {
-                          setError("Failed to delete")
-                        }
-                      }}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : null}
-          </>
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ) : null}
       </CardFooter>
+      {onDelete ? (
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete post?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={async () => {
+                  try {
+                    await onDelete(post.id)
+                    setDeleteOpen(false)
+                  } catch {
+                    setError("Failed to delete")
+                  }
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
     </Card>
   )
 }

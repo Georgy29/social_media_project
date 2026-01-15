@@ -79,7 +79,12 @@ Goal: someone can run it locally and use the whole product end-to-end.
 - [ ] Screenshots or short GIF
 
 ### UI polish (optional, high-signal)
-- [ ] X-like layout (3-column on desktop; mobile bottom bar)
+- [x] X-like layout (left nav + center feed + right sidebar on xl; hide right under xl)
+- [x] Left nav: profile card + Feed/Profile/Search + Settings anchored at bottom
+- [x] Composer modal and tuned CreatePost sizing
+- [x] Post actions dropdown + delete confirmation dialog
+- [x] Build notes accordion (shadcn/ui)
+- [ ] Bookmarks page + persisted bookmarks
 
 Definition of done
 - `docker compose up` → open frontend → can register/login/post/like/retweet and see counts persist after refresh.
@@ -116,6 +121,10 @@ Goal: public URLs exist and the README points to them.
 Pick 1 product feature + 1 backend credibility upgrade.
 
 ### Product features (high signal)
+- [ ] Bookmarks (persisted)
+  - [ ] Backend: add `POST /bookmarks/{post_id}` + `DELETE /bookmarks/{post_id}`
+  - [ ] Backend: `GET /bookmarks?skip&limit` to power a bookmarks page
+  - [ ] Frontend: `/bookmarks` route + real toggle state per post
 - [ ] Avatar system (no uploads yet)
   - [ ] DB: add `users.avatar_kind` + `users.avatar_value` (or `users.avatar_key`)
   - [ ] Static assets: ship a pool of animal PNGs (server-hosted)
@@ -138,6 +147,12 @@ Pick 1 product feature + 1 backend credibility upgrade.
 - [ ] Seed/demo data (makes the project “tryable”)
   - [ ] Script: create demo users, posts, likes, reposts (and optional media)
   - [ ] Document “reset DB + seed” workflow in README
+
+## Immediate fixes (do now)
+- [ ] Fix encoding artifacts in UI strings (e.g., Loading... text, etc.)
+- [ ] Add `/bookmarks` route placeholder or wire real page to avoid dead links
+- [ ] Search page stub + backend query (or hide the nav item until wired)
+- [ ] Verify animate-ui usage is limited to alert dialogs; keep shadcn as the default UI set
 
 ### Backend credibility upgrades (pick 1–2)
 - [ ] Rate limiting (Redis-backed)

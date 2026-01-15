@@ -122,7 +122,7 @@ export function SignupForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={pending}>
-                  {pending ? "Creating…" : "Create Account"}
+                  {pending ? "Creating..." : "Create Account"}
                 </Button>
                 {error || localError ? (
                   <FieldDescription className="text-destructive">

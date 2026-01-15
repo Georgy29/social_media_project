@@ -86,7 +86,7 @@ export function LoginForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={pending}>
-                  {pending ? "Logging in…" : "Login"}
+                  {pending ? "Logging in..." : "Login"}
                 </Button>
                 {error ? (
                   <FieldDescription className="text-destructive">

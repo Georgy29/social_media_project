@@ -1,13 +1,43 @@
 import { useMemo, useState, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import { IconHome, IconSettings, IconUser } from "@tabler/icons-react"
+import {
+  IconHome,
+  IconSearch,
+  IconSettings,
+  IconUpload,
+  IconUser,
+} from "@tabler/icons-react"
 
 import { CreatePost } from "@/components/CreatePost"
 import { Logo } from "@/components/Logo"
 import { PostCard } from "@/components/PostCard"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/animate-ui/components/radix/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { type ApiError } from "@/api/client"
 import {
@@ -20,6 +50,8 @@ import {
   useToggleRetweetMutation,
   useUpdatePostMutation,
 } from "@/api/queries"
+
+type FeedView = "public" | "subscriptions"
 
 export default function FeedPage() {
   const navigate = useNavigate()
@@ -39,7 +71,10 @@ export default function FeedPage() {
   const deletePostMutation = useDeletePostMutation()
   const toggleLikeMutation = useToggleLikeMutation()
   const toggleRetweetMutation = useToggleRetweetMutation()
-  const [showComposer, setShowComposer] = useState(false)
+  const [feedView, setFeedView] = useState<FeedView>("public")
+  const [composerOpen, setComposerOpen] = useState(false)
+  const username = meQuery.data?.username ?? "guest"
+  const initials = username.slice(0, 2).toUpperCase()
 
   const isMutating =
     createPostMutation.isPending ||
@@ -49,240 +84,322 @@ export default function FeedPage() {
     toggleRetweetMutation.isPending
   const isRefreshing = feedQuery.isFetching && !feedQuery.isPending
 
-  return (
-    <div className="bg-background text-foreground min-h-screen w-full">
-      <div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:grid-cols-[240px_minmax(0,1fr)_240px]">
-        <aside className="md:sticky md:top-4 md:h-[calc(100vh-2rem)]">
-          <div className="hidden md:flex h-full flex-col gap-4">
-            <div className="border-border bg-card rounded-lg border px-4 py-3">
-              <Logo size="md" name="Social" />
-              <div className="text-muted-foreground mt-1 text-xs">
-                {meQuery.data ? `@${meQuery.data.username}` : "Welcome back"}
-              </div>
-            </div>
-            <nav className="border-border bg-card rounded-lg border p-2">
-              <Button
-                className="w-full justify-start gap-2"
-                variant="secondary"
-                size="sm"
-              >
-                <IconHome className="h-4 w-4" aria-hidden="true" />
-                Feed
-              </Button>
-              <Button
-                className="mt-1 w-full justify-start gap-2"
-                variant="ghost"
-                size="sm"
-              >
-                <IconUser className="h-4 w-4" aria-hidden="true" />
-                Profile
-              </Button>
-              <Button
-                className="mt-1 w-full justify-start gap-2"
-                variant="ghost"
-                size="sm"
-              >
-                <IconSettings className="h-4 w-4" aria-hidden="true" />
-                Settings
-              </Button>
-            </nav>
-            <Button
-              className="mt-auto"
-              onClick={() => setShowComposer(true)}
-            >
-              Post
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                logout()
-                navigate("/login", { replace: true })
-              }}
-            >
-              Logout
-            </Button>
-          </div>
-        </aside>
+  const handleCreatePost = (content: string, closeDialog = false) => {
+    createPostMutation.mutate(
+      { content },
+      {
+        onSuccess: () => {
+          toast.success("Posted")
+          if (closeDialog) {
+            setComposerOpen(false)
+          }
+        },
+        onError: (e: ApiError) => toast.error(e.message),
+      },
+    )
+  }
+  const handleLogout = () => {
+    logout()
+    navigate("/login", { replace: true })
+  }
 
-        <main className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xl font-semibold">Feed</div>
-              <div className="text-muted-foreground text-sm">
-                {meQuery.data ? `Logged in as @${meQuery.data.username}` : null}
+  return (
+    <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+      <AlertDialog>
+        <div className="bg-background text-foreground min-h-screen w-full">
+        <div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_240px]">
+          <aside className="md:sticky md:top-4 md:h-[calc(100vh-2rem)]">
+            <div className="hidden md:flex h-full flex-col gap-4">
+              <div className="border-border bg-card rounded-lg border p-3">
+                <Button
+                  className="h-auto w-full justify-start gap-3 px-3 py-2"
+                  variant="ghost"
+                  aria-label="View profile"
+                  onClick={() => navigate("/feed")}
+                >
+                  <div className="bg-muted text-muted-foreground flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold">
+                    {initials}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">{username}</div>
+                    <div className="text-muted-foreground text-xs">
+                      @{username}
+                    </div>
+                  </div>
+                </Button>
               </div>
-            </div>
-            <div className="flex items-center gap-2 md:hidden">
+              <nav className="border-border bg-card rounded-lg border p-3">
+                <Button
+                  className="w-full justify-start gap-2"
+                  variant="secondary"
+                >
+                  <IconHome className="h-5 w-5" aria-hidden="true" />
+                  Feed
+                </Button>
+                <Button
+                  className="mt-2 w-full justify-start gap-2"
+                  variant="ghost"
+                >
+                  <IconUser className="h-5 w-5" aria-hidden="true" />
+                  Profile
+                </Button>
+                <Button
+                  className="mt-2 w-full justify-start gap-2"
+                  variant="ghost"
+                >
+                  <IconSearch className="h-5 w-5" aria-hidden="true" />
+                  Search
+                </Button>
+                <div className="mt-3 border-t border-border pt-2">
+                  <Button className="w-full justify-start gap-2" variant="ghost">
+                    <IconSettings className="h-5 w-5" aria-hidden="true" />
+                    Settings
+                  </Button>
+                </div>
+              </nav>
               <Button
-                variant="outline"
-                onClick={() => setShowComposer((prev) => !prev)}
-                aria-expanded={showComposer}
-                aria-controls="mobile-composer"
+                className="w-full"
+                variant="default"
+                size="default"
+                onClick={() => setComposerOpen(true)}
               >
                 Post
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  logout()
-                  navigate("/login", { replace: true })
-                }}
-              >
-                Logout
-              </Button>
+              <AlertDialogTrigger asChild>
+                <Button className="mt-auto w-full" variant="outline">
+                  Logout
+                </Button>
+              </AlertDialogTrigger>
             </div>
-          </div>
+          </aside>
 
-          <div className="border-border bg-card rounded-lg border p-1">
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" size="sm">
-                Public feed
-              </Button>
-              <Button variant="ghost" size="sm">
-                Subscriptions
-              </Button>
+          <main className="space-y-4">
+            <div className="flex justify-center">
+              <Logo size="md" name="Social" />
             </div>
-          </div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <div className="text-xl font-semibold">Feed</div>
+                <div className="text-muted-foreground text-sm">
+                  {meQuery.data ? `Hello @${meQuery.data.username} feel free to try out my social media MVP` : null}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 md:hidden">
+                <Button onClick={() => setComposerOpen(true)}>
+                  Post
+                </Button>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline">Logout</Button>
+                </AlertDialogTrigger>
+              </div>
+            </div>
 
-          <div
-            id="mobile-composer"
-            className={`border-border bg-card rounded-lg border p-3 ${
-              showComposer ? "block" : "hidden"
-            } md:block`}
-          >
+            <Tabs
+              value={feedView}
+              onValueChange={(value) => setFeedView(value as FeedView)}
+              className="border-border bg-card rounded-lg border p-1"
+            >
+              <TabsList className="w-full">
+                <TabsTrigger value="public">Public feed</TabsTrigger>
+                <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <CreatePost
               pending={createPostMutation.isPending}
-              onCreate={(content) => {
-                createPostMutation.mutate(
-                  { content },
-                  {
-                    onSuccess: () => toast.success("Posted"),
-                    onError: (e: ApiError) => toast.error(e.message),
-                  },
-                )
-              }}
+              onCreate={(content) => handleCreatePost(content)}
             />
-          </div>
 
-          {feedQuery.isPending ? (
-            <FeedSkeleton />
-          ) : feedQuery.isError ? (
-            <div className="border-destructive/30 bg-destructive/10 rounded-md border p-4 text-center">
-              <div className="text-destructive font-medium">
-                Couldn’t load feed
+            {feedQuery.isPending ? (
+              <FeedSkeleton />
+            ) : feedQuery.isError ? (
+              <div className="border-destructive/30 bg-destructive/10 rounded-md border p-4 text-center">
+                <div className="text-destructive font-medium">
+                  Couldn't load feed
+                </div>
+                <div className="text-muted-foreground mt-1 text-sm">
+                  {feedQuery.error.message}
+                </div>
+                <Button
+                  className="mt-3"
+                  variant="outline"
+                  onClick={() => feedQuery.refetch()}
+                >
+                  Retry
+                </Button>
               </div>
-              <div className="text-muted-foreground mt-1 text-sm">
-                {feedQuery.error.message}
+            ) : feedQuery.data.length ? (
+              <div className="space-y-3">
+                {feedQuery.data.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    pending={isMutating}
+                    isOwner={meQuery.data?.id === post.owner_id}
+                    onToggleLike={(p) =>
+                      toggleLikeMutation.mutate({
+                        postId: p.id,
+                        isLiked: p.is_liked,
+                      })
+                    }
+                    onToggleRetweet={(p) =>
+                      toggleRetweetMutation.mutate({
+                        postId: p.id,
+                        isRetweeted: p.is_retweeted,
+                      })
+                    }
+                    onUpdate={async (postId, content) => {
+                      try {
+                        await updatePostMutation.mutateAsync({
+                          postId,
+                          payload: { content },
+                        })
+                        toast.success("Updated")
+                      } catch (e) {
+                        const error = e as ApiError
+                        toast.error(error.message)
+                        throw e
+                      }
+                    }}
+                    onDelete={async (postId) => {
+                      try {
+                        await deletePostMutation.mutateAsync({ postId })
+                        toast.success("Deleted")
+                      } catch (e) {
+                        const error = e as ApiError
+                        toast.error(error.message)
+                        throw e
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground py-8 text-center">
+                No posts yet. Create your first post above.
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                disabled={page === 0 || feedQuery.isFetching}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                Previous
+              </Button>
+              <div className="text-muted-foreground text-sm">
+                Page {page + 1}
+                {isRefreshing ? " - Refreshing..." : ""}
               </div>
               <Button
-                className="mt-3"
                 variant="outline"
-                onClick={() => feedQuery.refetch()}
+                disabled={
+                  feedQuery.isFetching || (feedQuery.data?.length ?? 0) < limit
+                }
+                onClick={() => setPage((p) => p + 1)}
               >
-                Retry
+                Next
               </Button>
             </div>
-          ) : feedQuery.data.length ? (
-            <div className="space-y-3">
-              {feedQuery.data.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  pending={isMutating}
-                  isOwner={meQuery.data?.id === post.owner_id}
-                  onToggleLike={(p) =>
-                    toggleLikeMutation.mutate({
-                      postId: p.id,
-                      isLiked: p.is_liked,
-                    })
-                  }
-                  onToggleRetweet={(p) =>
-                    toggleRetweetMutation.mutate({
-                      postId: p.id,
-                      isRetweeted: p.is_retweeted,
-                    })
-                  }
-                  onUpdate={async (postId, content) => {
-                    try {
-                      await updatePostMutation.mutateAsync({
-                        postId,
-                        payload: { content },
-                      })
-                      toast.success("Updated")
-                    } catch (e) {
-                      const error = e as ApiError
-                      toast.error(error.message)
-                      throw e
-                    }
-                  }}
-                  onDelete={async (postId) => {
-                    try {
-                      await deletePostMutation.mutateAsync({ postId })
-                      toast.success("Deleted")
-                    } catch (e) {
-                      const error = e as ApiError
-                      toast.error(error.message)
-                      throw e
-                    }
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-muted-foreground py-8 text-center">
-              No posts yet. Create your first post above.
-            </div>
-          )}
+          </main>
 
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              disabled={page === 0 || feedQuery.isFetching}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-            >
-              Previous
-            </Button>
-            <div className="text-muted-foreground text-sm">
-              Page {page + 1}
-              {isRefreshing ? " • Refreshing…" : ""}
+          <aside className="xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)] hidden xl:block">
+            <div className="flex flex-col gap-4">
+              <SidebarCard title="Search">
+                <div className="text-muted-foreground text-sm">
+                  Find people or topics.
+                </div>
+              </SidebarCard>
+              <SidebarCard title="Trends">
+                <ul className="text-muted-foreground space-y-2 text-sm">
+                  <li>#fastapi</li>
+                  <li>#react</li>
+                  <li>#shadcn</li>
+                </ul>
+              </SidebarCard>
+              <SidebarCard title="Who to follow">
+                <ul className="text-muted-foreground space-y-2 text-sm">
+                  <li>@frontendwizard</li>
+                  <li>@backendhero</li>
+                  <li>@productmind</li>
+                </ul>
+              </SidebarCard>
+              <SidebarCard title="Build notes">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="made">
+                    <AccordionTrigger>How was this made?</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="space-y-1">
+                        <li>shadcn UI + Radix UI</li>
+                        <li>Animate UI components</li>
+                        <li>React + Vite + TypeScript</li>
+                        <li>Tailwind CSS + Sonner</li>
+                        <li>FastAPI backend + TanStack Query</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="next">
+                    <AccordionTrigger>What can I do?</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="space-y-1">
+                        <li>Post, edit, like, repost, and bookmark</li>
+                        <li>Filter public vs subscriptions feed</li>
+                        <li>Open the composer for richer posts</li>
+                        <li>Follow people and explore trends</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </SidebarCard>
             </div>
-            <Button
-              variant="outline"
-              disabled={
-                feedQuery.isFetching || (feedQuery.data?.length ?? 0) < limit
-              }
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </main>
-
-        <aside className="md:sticky md:top-4 md:h-[calc(100vh-2rem)]">
-          <div className="hidden md:flex flex-col gap-4">
-            <SidebarCard title="Search">
-              <div className="text-muted-foreground text-sm">
-                Find people or topics.
-              </div>
-            </SidebarCard>
-            <SidebarCard title="Trends">
-              <ul className="text-muted-foreground space-y-2 text-sm">
-                <li>#fastapi</li>
-                <li>#react</li>
-                <li>#shadcn</li>
-              </ul>
-            </SidebarCard>
-            <SidebarCard title="Who to follow">
-              <ul className="text-muted-foreground space-y-2 text-sm">
-                <li>@frontendwizard</li>
-                <li>@backendhero</li>
-                <li>@productmind</li>
-              </ul>
-            </SidebarCard>
-          </div>
-        </aside>
+          </aside>
+        </div>
       </div>
-    </div>
+
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Log out?</AlertDialogTitle>
+          <AlertDialogDescription>
+            You will need to sign in again to continue.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleLogout}>Logout</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">New post</DialogTitle>
+        </DialogHeader>
+        <div className="border-muted-foreground/30 bg-muted/30 rounded-xl border border-dashed p-6 text-center">
+          <div className="border-muted-foreground/40 bg-background mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-dashed">
+            <IconUpload className="text-muted-foreground h-5 w-5" aria-hidden="true" />
+          </div>
+          <div className="text-sm font-medium">Add photo or video</div>
+          <div className="text-muted-foreground mt-1 text-xs">
+            Upload from your device or choose from Social.
+          </div>
+          <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+            <Button type="button" variant="secondary">
+              Upload from device
+            </Button>
+            <Button type="button" variant="ghost">
+              Choose from Social
+            </Button>
+          </div>
+        </div>
+        <CreatePost
+          pending={createPostMutation.isPending}
+          onCreate={(content) => handleCreatePost(content, true)}
+          showTitle={false}
+          className="ring-0 shadow-none"
+        />
+      </DialogContent>
+    </Dialog>
   )
 }
 

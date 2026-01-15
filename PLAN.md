@@ -18,17 +18,17 @@ Goal: lock the “shape” of the product so you stop reworking core decisions.
 
 ### Scope freeze (MVP)
 Backend (must ship)
-- [ ] Auth: register, login, `GET /users/me`
-- [ ] Posts: create, feed (paginated), edit (owner only), delete
-- [ ] Reactions: like/unlike, retweet/unretweet
-- [ ] Feed includes: owner username + counts (likes/retweets)
+- [x] Auth: register, login, `GET /users/me`
+- [x] Posts: create, feed (paginated), edit (owner only), delete
+- [x] Reactions: like/unlike, retweet/unretweet
+- [x] Feed includes: owner username + counts (likes/retweets)
 
 Frontend (must ship)
-- [ ] Login/Register page
-- [ ] Feed page (list + counts)
-- [ ] Create post UI
-- [ ] Like/retweet buttons
-- [ ] Basic loading/errors/toasts
+- [x] Login/Register page
+- [x] Feed page (list + counts)
+- [x] Create post UI
+- [x] Like/retweet buttons
+- [x] Basic loading/errors/toasts
 
 Explicitly NOT MVP
 - [ ] Comments
@@ -39,7 +39,7 @@ Explicitly NOT MVP
 
 
 ### API contract decisions (write down once)
-- [ ] Decide which endpoint the frontend uses for the feed:
+- [x] Decide which endpoint the frontend uses for the feed:
   - Option A (minimal change): use `GET /posts/with_counts/` - is main feed API 
 - [ ] Standardize error semantics (when to return 401 vs 403 vs 404) and keep them consistent
 
@@ -47,36 +47,39 @@ Explicitly NOT MVP
 Goal: someone can run it locally and use the whole product end-to-end.
 
 ### Backend deliverables
-- [ ] Add `GET /users/me` (returns current user)
-- [ ] Introduce a small settings module (read `DATABASE_URL`, `SECRET_KEY`, token expiry, CORS origins)
-- [ ] Alembic migrations:
-  - [ ] initialize Alembic and wire to models
-  - [ ] initial autogenerate migration
-  - [ ] `upgrade head` works on a fresh DB
-- [ ] Docker Compose (dev): Postgres + API
-- [ ] Document DB reset workflow (drop + upgrade + seed)
+- [x] Add `GET /users/me` (returns current user)
+- [x] Introduce a small settings module (read `DATABASE_URL`, `SECRET_KEY`, token expiry, CORS origins)
+- [x] Alembic migrations:
+  - [x] initialize Alembic and wire to models
+  - [x] initial autogenerate migration
+  - [x] `upgrade head` works on a fresh DB
+- [x] Docker Compose (dev): Postgres + API
+- [x] Document DB reset workflow (drop + upgrade + seed)
 - [ ] Optional polish (high signal, low time): structured error responses + consistent status codes
 
 ### Frontend deliverables
-- [ ] Scaffold `frontend/`: Vite + React + TypeScript
-- [ ] Tailwind + shadcn/ui
-- [ ] TanStack Query for server state
-- [ ] OpenAPI → TS types/client generation (repeatable script)
-- [ ] Auth:
-  - [ ] Register
-  - [ ] Login (store token)
-  - [ ] Route guard (redirect to login)
-- [ ] Feed:
-  - [ ] Fetch + render posts (owner + counts)
-  - [ ] Create post
-  - [ ] Edit post (only if owner + within window)
-  - [ ] Like/unlike + retweet/unretweet
+- [x] Scaffold `frontend/`: Vite + React + TypeScript
+- [x] Tailwind + shadcn/ui
+- [x] TanStack Query for server state
+- [x] OpenAPI → TS types/client generation (repeatable script)
+- [x] Auth:
+  - [x] Register
+  - [x] Login (store token)
+  - [x] Route guard (redirect to login)
+- [x] Feed:
+  - [x] Fetch + render posts (owner + counts)
+  - [x] Create post
+  - [x] Edit post (only if owner + within window)
+  - [x] Like/unlike + retweet/unretweet
 
 ### README (must-have)
-- [ ] Local run instructions (docker compose)
-- [ ] Local URLs + example `.env`
+- [x] Local run instructions (docker compose)
+- [x] Local URLs + example `.env`
 - [ ] “Tradeoffs” section (what you intentionally skipped)
 - [ ] Screenshots or short GIF
+
+### UI polish (optional, high-signal)
+- [ ] X-like layout (3-column on desktop; mobile bottom bar)
 
 Definition of done
 - `docker compose up` → open frontend → can register/login/post/like/retweet and see counts persist after refresh.

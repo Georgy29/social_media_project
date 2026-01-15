@@ -23,7 +23,7 @@ Everything else is Phase 2+.
 - [x] Reactions: like/unlike, retweet/unretweet
 - [x] Feed with counts + owner username (`GET /posts/with_counts/`)
 - [x] Follow/unfollow users
-- [ ] `GET /users/me` (or equivalent “me” endpoint)
+- [x] `GET /users/me` (or equivalent "me" endpoint)
 - [ ] README (local run + tradeoffs)
 - [ ] Docker/Deploy/CI (below)
 

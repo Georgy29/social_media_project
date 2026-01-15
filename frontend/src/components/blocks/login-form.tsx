@@ -11,6 +11,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/Logo";
 import { SocialFlipCard } from "@/components/blocks/social-flip-card";
 
 export type LoginFormValues = {
@@ -45,7 +46,8 @@ export function LoginForm({
           >
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Welcome back to Repost</h1>
+                <Logo size="lg" />
+                <h1 className="text-2xl font-bold">Welcome back</h1>
                 <p className="text-muted-foreground text-balance">
                   Login to my demo Social Media App
                 </p>

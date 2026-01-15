@@ -1,6 +1,7 @@
 import { IconBrandGithub, IconBrandLinkedin } from "@tabler/icons-react"
 
 import { FlipCard } from "@/components/animate-ui/flip-card"
+import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -18,11 +19,7 @@ export function SocialFlipCard({
       className={cn("h-full w-full cursor-pointer", className)}
       front={
         <div className="bg-background/70 text-foreground flex h-full w-full items-center justify-center overflow-hidden rounded-none backdrop-blur">
-          <img
-            src="/biglogo.png"
-            alt="Repost"
-            className="h-full w-full object-contain p-8"
-          />
+          <Logo size="xl" className="flex-col gap-3" />
         </div>
       }
       back={

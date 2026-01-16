@@ -1,8 +1,8 @@
 ﻿from datetime import datetime, timedelta, timezone
-from typing import Annotated, List
+from typing import Annotated, List, Literal
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from .. import auth, exceptions, models, schemas
@@ -171,7 +171,7 @@ def unretweet_post(
 
 
 @router.get(
-    "/with_counts/", 
+    "/with_counts/",
     response_model=List[schemas.PostWithCounts],
     summary="Feed with reaction counts",
     description="Returns posts ordered by newest first, including owner username and like/retweet counts.",
@@ -182,9 +182,18 @@ def read_posts_with_counts(
     current_user: models.User = Depends(auth.get_current_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
+    view: Literal["public", "subscriptions"] = Query("public"),
 ):
+    followee_ids_subq = (
+        db.query(models.Follow.c.followee_id)
+        .filter(models.Follow.c.follower_id == current_user.id)
+        .subquery()
+    )
+
     likes_subq = (
-        db.query(models.Like.post_id, func.count(models.Like.user_id).label("likes_count"))
+        db.query(
+            models.Like.post_id, func.count(models.Like.user_id).label("likes_count")
+        )
         .group_by(models.Like.post_id)
         .subquery()
     )
@@ -210,7 +219,7 @@ def read_posts_with_counts(
         .subquery()
     )
 
-    posts = (
+    query = (
         db.query(
             models.Post,
             models.User.username.label("owner_username"),
@@ -223,15 +232,29 @@ def read_posts_with_counts(
         .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
         .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
         .outerjoin(liked_by_me_subq, models.Post.id == liked_by_me_subq.c.post_id)
-        .outerjoin(retweeted_by_me_subq, models.Post.id == retweeted_by_me_subq.c.post_id)
-        .order_by(models.Post.timestamp.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
+        .outerjoin(
+            retweeted_by_me_subq, models.Post.id == retweeted_by_me_subq.c.post_id
+        )
     )
 
+    if view == "subscriptions":
+        query = query.filter(
+            or_(
+                models.Post.owner_id == current_user.id,
+                models.Post.owner_id.in_(followee_ids_subq),
+            )
+        )
+    posts = query.order_by(models.Post.timestamp.desc()).offset(skip).limit(limit).all()
+
     response_posts = []
-    for post, owner_username, likes_count, retweets_count, is_liked, is_retweeted in posts:
+    for (
+        post,
+        owner_username,
+        likes_count,
+        retweets_count,
+        is_liked,
+        is_retweeted,
+    ) in posts:
         response_posts.append(
             schemas.PostWithCounts(
                 id=post.id,

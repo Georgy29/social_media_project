@@ -40,6 +40,18 @@ Open: `http://localhost:5173`
   - `POST /posts/{post_id}/like` / `POST /posts/{post_id}/unlike`
   - `POST /posts/{post_id}/retweet` / `POST /posts/{post_id}/unretweet`
 
+## Next wiring targets (UI exists / in progress)
+These are the next backend contracts to add so the UI can be fully “real”:
+- Subscriptions feed
+  - Extend `GET /posts/with_counts/` with a filter param (e.g. `view=public|subscriptions`).
+- Profile + timeline
+  - `GET /users/{username}` (public profile + counts)
+  - `GET /users/{username}/timeline?skip&limit`
+- Media uploads (posts + avatars)
+  - `POST /media/presign` (auth)
+  - Posts accept optional `media_id` and feed includes `media_url`
+  - `PUT /users/me/avatar` (recommend: `media_id`-based)
+
 ## OpenAPI -> TypeScript types
 Generated file:
 - `frontend/src/api/types.ts` (do not hand-edit)

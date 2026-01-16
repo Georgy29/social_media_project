@@ -134,6 +134,19 @@ Controlled LLM approach
 
 Rule: “LLM writes UI, I enforce contracts.”
 
+## Milestone 2.5 — Wire remaining UI (profile/subscriptions/media)
+Goal: backend contracts match the UI you’ve already started building.
+
+- [ ] Subscriptions feed (follow-based)
+  - [ ] Extend `GET /posts/with_counts/` with a filter param (e.g. `view=public|subscriptions`).
+- [ ] Profile page + timeline
+  - [ ] `GET /users/{username}` (public profile + counts)
+  - [ ] `GET /users/{username}/timeline?skip&limit`
+- [ ] Media uploads (posts + avatars)
+  - [ ] `POST /media/presign` (auth) + storage wiring
+  - [ ] Posts accept optional `media_id` and feed returns `media_url`
+  - [ ] `PUT /users/me/avatar`
+
 ## Milestone 3 — Deployable demo
 
 Recommended demo topology

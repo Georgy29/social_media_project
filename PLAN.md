@@ -89,6 +89,25 @@ Goal: someone can run it locally and use the whole product end-to-end.
 Definition of done
 - `docker compose up` → open frontend → can register/login/post/like/retweet and see counts persist after refresh.
 
+## Milestone 1.5 — Wire remaining UI (profile/subscriptions/media)
+Goal: ship backend endpoints + migrations needed by the UI you already started (Profile nav, Subscriptions tab, Upload CTA).
+
+- [ ] Subscriptions feed (follow-based)
+  - [ ] Backend: extend `GET /posts/with_counts/` with a filter (e.g. `view=public|subscriptions`) and return only posts from users I follow (and optionally my own).
+  - [ ] Frontend: when “Subscriptions” tab is selected, pass the filter param and keep pagination working.
+
+- [ ] Profile page + timeline
+  - [ ] Backend: `GET /users/{username}` (public profile + follower/following/post counts).
+  - [ ] Backend: `GET /users/{username}/timeline?skip&limit` (user posts + reposts, newest first).
+  - [ ] Frontend: add `/profile/:username` route and wire Profile nav to it.
+
+- [ ] Media uploads (posts + avatars)
+  - [ ] Backend: add `media` table + Alembic migration.
+  - [ ] Backend: `POST /media/presign` (auth) returning `{ media_id, upload_url, public_url }`.
+  - [ ] Backend: posts accept optional `media_id` and feed includes optional `media_url`.
+  - [ ] Backend: `PUT /users/me/avatar` to set avatar (recommend: `media_id`-based).
+  - [ ] Frontend: implement “Upload from device” flow: choose file → presign → upload → create post / set avatar.
+
 ## Milestone 2 — Quality pass (tests + CI)
 Goal: the repo looks like a teammate could safely work on it.
 
@@ -125,25 +144,6 @@ Pick 1 product feature + 1 backend credibility upgrade.
   - [ ] Backend: add `POST /bookmarks/{post_id}` + `DELETE /bookmarks/{post_id}`
   - [ ] Backend: `GET /bookmarks?skip&limit` to power a bookmarks page
   - [ ] Frontend: `/bookmarks` route + real toggle state per post
-- [ ] Avatar system (no uploads yet)
-  - [ ] DB: add `users.avatar_kind` + `users.avatar_value` (or `users.avatar_key`)
-  - [ ] Static assets: ship a pool of animal PNGs (server-hosted)
-  - [ ] `GET /avatars` (public): list available avatar keys + URLs (+ optional gradients list)
-  - [ ] Register flow: allow choosing avatar (either in `UserCreate` or via `PUT /users/me/avatar`)
-  - [ ] Frontend: register page fetches `/avatars`, user chooses gradient/animal; show avatar in UI
-- [ ] Profile page + timeline (posts + reposts)
-  - [ ] `GET /users/{username}` (public): profile + counts
-  - [ ] `GET /users/{username}/timeline?skip&limit`: return user posts + reposts of others
-  - [ ] Frontend: left nav item “Profile”; profile view with tabs “Posts / Reposts”
-- [ ] Media uploads (portfolio path: presigned, not multipart)
-  - [ ] Add MinIO to `docker-compose.yml` for local S3-compatible storage
-  - [ ] DB: `media` table (id, owner_id, storage_key, public_url, mime, size, created_at, status)
-  - [ ] `POST /media/presign` (auth): returns `{ media_id, upload_url, public_url }`
-  - [ ] Optional: `POST /media/{id}/complete` to verify object exists and mark ready
-  - [ ] Posts: allow attaching optional `media_id` (start with 1 image per post)
-  - [ ] Frontend: CreatePost supports selecting image → presign → upload → create post
-  - [ ] Storage abstraction: `STORAGE_BACKEND=local|minio|imagekit` (same API, different implementation)
-  - [ ] Optional thumbnails: generate + store thumbnail URLs
 - [ ] Seed/demo data (makes the project “tryable”)
   - [ ] Script: create demo users, posts, likes, reposts (and optional media)
   - [ ] Document “reset DB + seed” workflow in README

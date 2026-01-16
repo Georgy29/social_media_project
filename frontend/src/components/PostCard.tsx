@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState } from "react";
 import {
   IconBookmark,
   IconBookmarkFilled,
@@ -8,22 +8,27 @@ import {
   IconHeartFilled,
   IconRepeat,
   IconTrash,
-} from "@tabler/icons-react"
-import { toast } from "sonner"
+} from "@tabler/icons-react";
+import { toast } from "sonner";
 
-import type { components } from "@/api/types"
+import type { components } from "@/api/types";
 
-import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/dropdown-menu";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,10 +38,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
-export type PostWithCounts = components["schemas"]["PostWithCounts"]
+export type PostWithCounts = components["schemas"]["PostWithCounts"];
 
 export function PostCard({
   post,
@@ -48,46 +52,57 @@ export function PostCard({
   isOwner = false,
   pending = false,
 }: {
-  post: PostWithCounts
-  pending?: boolean
-  isOwner?: boolean
-  onToggleLike: (post: PostWithCounts) => void
-  onToggleRetweet: (post: PostWithCounts) => void
-  onToggleBookmark?: (post: PostWithCounts, nextState: boolean) => Promise<void> | void
-  onDelete?: (postId: number) => Promise<void>
-  onUpdate?: (postId: number, content: string) => Promise<unknown>
+  post: PostWithCounts;
+  pending?: boolean;
+  isOwner?: boolean;
+  onToggleLike: (post: PostWithCounts) => void;
+  onToggleRetweet: (post: PostWithCounts) => void;
+  onToggleBookmark?: (
+    post: PostWithCounts,
+    nextState: boolean,
+  ) => Promise<void> | void;
+  onDelete?: (postId: number) => Promise<void>;
+  onUpdate?: (postId: number, content: string) => Promise<unknown>;
 }) {
-  const ts = new Date(post.timestamp)
-  const timeLabel = Number.isNaN(ts.valueOf()) ? post.timestamp : ts.toLocaleString()
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(post.content)
-  const [error, setError] = useState<string | null>(null)
-  const [likeBurst, setLikeBurst] = useState(0)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [bookmarked, setBookmarked] = useState(false)
-  const [bookmarkBusy, setBookmarkBusy] = useState(false)
-  const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase()
+  const ts = new Date(post.timestamp);
+  const timeLabel = Number.isNaN(ts.valueOf())
+    ? post.timestamp
+    : ts.toLocaleString();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(post.content);
+  const [error, setError] = useState<string | null>(null);
+  const [likeBurst, setLikeBurst] = useState(0);
+  const [retweetBurst, setRetweetBurst] = useState(0);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
+  const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase();
 
   const handleToggleLike = () => {
-    setLikeBurst((value) => value + 1)
-    onToggleLike(post)
-  }
+    setLikeBurst((value) => value + 1);
+    onToggleLike(post);
+  };
+
+  const handleToggleRetweet = () => {
+    setRetweetBurst((value) => value + 1);
+    onToggleRetweet(post);
+  };
 
   const handleToggleBookmark = async () => {
-    if (pending || bookmarkBusy) return
-    const nextState = !bookmarked
-    setBookmarked(nextState)
-    setBookmarkBusy(true)
+    if (pending || bookmarkBusy) return;
+    const nextState = !bookmarked;
+    setBookmarked(nextState);
+    setBookmarkBusy(true);
     try {
-      await onToggleBookmark?.(post, nextState)
-      toast.success(nextState ? "Bookmarked" : "Bookmark removed")
+      await onToggleBookmark?.(post, nextState);
+      toast.success(nextState ? "Bookmarked" : "Bookmark removed");
     } catch {
-      setBookmarked(!nextState)
-      toast.error("Failed to update bookmark")
+      setBookmarked(!nextState);
+      toast.error("Failed to update bookmark");
     } finally {
-      setBookmarkBusy(false)
+      setBookmarkBusy(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -119,9 +134,9 @@ export function PostCard({
                 size="sm"
                 disabled={pending}
                 onClick={() => {
-                  setEditing(false)
-                  setDraft(post.content)
-                  setError(null)
+                  setEditing(false);
+                  setDraft(post.content);
+                  setError(null);
                 }}
               >
                 Cancel
@@ -130,14 +145,16 @@ export function PostCard({
                 size="sm"
                 disabled={pending || !draft.trim()}
                 onClick={async () => {
-                  if (!onUpdate) return
-                  setError(null)
+                  if (!onUpdate) return;
+                  setError(null);
                   try {
-                    await onUpdate(post.id, draft.trim())
-                    setEditing(false)
+                    await onUpdate(post.id, draft.trim());
+                    setEditing(false);
                   } catch (e) {
-                    const message = (e as { message?: string })?.message ?? "Failed to update"
-                    setError(message)
+                    const message =
+                      (e as { message?: string })?.message ??
+                      "Failed to update";
+                    setError(message);
                   }
                 }}
               >
@@ -165,7 +182,9 @@ export function PostCard({
               key={likeBurst}
               className={cn(
                 "flex items-center",
-                likeBurst > 0 ? "motion-safe:animate-heart-pop" : "",
+                likeBurst > 0
+                  ? "motion-safe:animate-[heart-pop_280ms_ease-out_1]"
+                  : "",
               )}
             >
               {post.is_liked ? (
@@ -185,14 +204,24 @@ export function PostCard({
             aria-pressed={post.is_retweeted}
             aria-label={post.is_retweeted ? "Undo repost" : "Repost"}
             className="gap-2"
-            onClick={() => onToggleRetweet(post)}
+            onClick={handleToggleRetweet}
           >
-            <IconRepeat
+            <span
+              key={retweetBurst}
               className={cn(
-                "text-muted-foreground",
-                post.is_retweeted ? "text-emerald-600" : "",
+                "flex items-center",
+                retweetBurst > 0
+                  ? "motion-safe:animate-[retweet-pop_220ms_ease-out_1]"
+                  : "",
               )}
-            />
+            >
+              <IconRepeat
+                className={cn(
+                  "text-muted-foreground transition-colors duration-150",
+                  post.is_retweeted ? "text-emerald-600" : "",
+                )}
+              />
+            </span>
             <span className="text-xs font-medium tabular-nums">
               {post.retweets_count}
             </span>
@@ -229,9 +258,9 @@ export function PostCard({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onSelect={() => {
-                    setEditing(true)
-                    setDraft(post.content)
-                    setError(null)
+                    setEditing(true);
+                    setDraft(post.content);
+                    setError(null);
                   }}
                 >
                   <IconEdit className="h-4 w-4" aria-hidden="true" />
@@ -266,10 +295,10 @@ export function PostCard({
                 variant="destructive"
                 onClick={async () => {
                   try {
-                    await onDelete(post.id)
-                    setDeleteOpen(false)
+                    await onDelete(post.id);
+                    setDeleteOpen(false);
                   } catch {
-                    setError("Failed to delete")
+                    setError("Failed to delete");
                   }
                 }}
               >
@@ -280,5 +309,5 @@ export function PostCard({
         </AlertDialog>
       ) : null}
     </Card>
-  )
+  );
 }

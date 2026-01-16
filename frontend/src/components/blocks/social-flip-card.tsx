@@ -1,18 +1,18 @@
-import { IconBrandGithub, IconBrandLinkedin } from "@tabler/icons-react"
+import { IconBrandGithub, IconBrandLinkedin } from "@tabler/icons-react";
 
-import { FlipCard } from "@/components/animate-ui/flip-card"
-import { Logo } from "@/components/Logo"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { FlipCard } from "@/components/animate-ui/flip-card";
+import { Logo } from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function SocialFlipCard({
   className,
   githubUrl = "https://github.com/",
   linkedinUrl = "https://www.linkedin.com/",
 }: {
-  className?: string
-  githubUrl?: string
-  linkedinUrl?: string
+  className?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
 }) {
   return (
     <FlipCard
@@ -25,7 +25,9 @@ export function SocialFlipCard({
       back={
         <div className="bg-background/80 text-foreground flex h-full w-full flex-col items-center justify-center gap-6 rounded-none p-6 backdrop-blur">
           <div className="space-y-1 text-center">
-            <p className="text-base font-semibold leading-none">Find me online</p>
+            <p className="text-base font-semibold leading-none">
+              Find me online
+            </p>
             <p className="text-muted-foreground text-sm">Opens in a new tab</p>
           </div>
           <div className="flex items-center justify-center gap-4">
@@ -63,5 +65,5 @@ export function SocialFlipCard({
         </div>
       }
     />
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 export function FlipCard({
   className,
@@ -9,8 +9,8 @@ export function FlipCard({
   tabIndex = 0,
   ...props
 }: Omit<React.ComponentPropsWithoutRef<"div">, "children"> & {
-  front: React.ReactNode
-  back: React.ReactNode
+  front: React.ReactNode;
+  back: React.ReactNode;
 }) {
   return (
     <div
@@ -27,5 +27,5 @@ export function FlipCard({
         </div>
       </div>
     </div>
-  )
+  );
 }

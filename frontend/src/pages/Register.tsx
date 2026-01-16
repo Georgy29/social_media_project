@@ -1,17 +1,17 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { toast } from "sonner"
+import { toast } from "sonner";
 
-import { type ApiError } from "@/api/client"
-import { useRegisterMutation } from "@/api/queries"
-import { SignupForm } from "@/components/blocks/signup-form"
-import { Logo } from "@/components/Logo"
+import { type ApiError } from "@/api/client";
+import { useRegisterMutation } from "@/api/queries";
+import { SignupForm } from "@/components/blocks/signup-form";
+import { Logo } from "@/components/Logo";
 
 export default function RegisterPage() {
-  const navigate = useNavigate()
-  const registerMutation = useRegisterMutation()
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const registerMutation = useRegisterMutation();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -21,20 +21,20 @@ export default function RegisterPage() {
           pending={registerMutation.isPending}
           error={error}
           onSignup={(values) => {
-            setError(null)
+            setError(null);
             registerMutation.mutate(values, {
               onSuccess: () => {
-                toast.success("Account created. Please log in.")
-                navigate("/login", { replace: true })
+                toast.success("Account created. Please log in.");
+                navigate("/login", { replace: true });
               },
               onError: (e: ApiError) => {
-                setError(e.message)
-                toast.error(e.message)
+                setError(e.message);
+                toast.error(e.message);
               },
-            })
+            });
           }}
         />
       </div>
     </div>
-  )
+  );
 }

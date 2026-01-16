@@ -1,17 +1,17 @@
-import { useState } from "react"
+import { useState } from "react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 type CreatePostProps = {
-  pending?: boolean
-  onCreate: (content: string) => void
-  showTitle?: boolean
-  className?: string
-  contentClassName?: string
-}
+  pending?: boolean;
+  onCreate: (content: string) => void;
+  showTitle?: boolean;
+  className?: string;
+  contentClassName?: string;
+};
 
 export function CreatePost({
   pending = false,
@@ -20,10 +20,10 @@ export function CreatePost({
   className,
   contentClassName,
 }: CreatePostProps) {
-  const [content, setContent] = useState("")
+  const [content, setContent] = useState("");
 
-  const trimmed = content.trim()
-  const canSubmit = Boolean(trimmed) && !pending
+  const trimmed = content.trim();
+  const canSubmit = Boolean(trimmed) && !pending;
 
   return (
     <Card className={className}>
@@ -47,8 +47,8 @@ export function CreatePost({
           <Button
             disabled={!canSubmit}
             onClick={() => {
-              onCreate(trimmed)
-              setContent("")
+              onCreate(trimmed);
+              setContent("");
             }}
           >
             {pending ? "Posting..." : "Post"}
@@ -56,5 +56,5 @@ export function CreatePost({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

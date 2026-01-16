@@ -1,27 +1,27 @@
-import { useState } from "react"
-import { Link } from "react-router-dom"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export type SignupFormValues = {
-  username: string
-  email: string
-  password: string
-}
+  username: string;
+  email: string;
+  password: string;
+};
 
 export function SignupForm({
   className,
@@ -30,15 +30,15 @@ export function SignupForm({
   error,
   ...props
 }: React.ComponentProps<"div"> & {
-  onSignup: (values: SignupFormValues) => void
-  pending?: boolean
-  error?: string | null
+  onSignup: (values: SignupFormValues) => void;
+  pending?: boolean;
+  error?: string | null;
 }) {
-  const [username, setUsername] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [localError, setLocalError] = useState<string | null>(null)
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -52,13 +52,13 @@ export function SignupForm({
         <CardContent>
           <form
             onSubmit={(e) => {
-              e.preventDefault()
-              setLocalError(null)
+              e.preventDefault();
+              setLocalError(null);
               if (password !== confirmPassword) {
-                setLocalError("Passwords do not match.")
-                return
+                setLocalError("Passwords do not match.");
+                return;
               }
-              onSignup({ username, email, password })
+              onSignup({ username, email, password });
             }}
           >
             <FieldGroup>
@@ -145,5 +145,5 @@ export function SignupForm({
         and <a href="#">Privacy Policy</a>.
       </FieldDescription>
     </div>
-  )
+  );
 }

@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { motion, isMotionComponent, type HTMLMotionProps } from 'motion/react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { motion, isMotionComponent, type HTMLMotionProps } from "motion/react";
+import { cn } from "@/lib/utils";
 
 type AnyProps = Record<string, unknown>;
 
 type DOMMotionProps<T extends HTMLElement = HTMLElement> = Omit<
   HTMLMotionProps<keyof HTMLElementTagNameMap>,
-  'ref'
+  "ref"
 > & { ref?: React.Ref<T> };
 
 type WithAsChild<Base extends object> =
@@ -26,7 +26,7 @@ function mergeRefs<T>(
   return (node) => {
     refs.forEach((ref) => {
       if (!ref) return;
-      if (typeof ref === 'function') {
+      if (typeof ref === "function") {
         ref(node);
       } else {
         (ref as React.RefObject<T | null>).current = node;
@@ -58,23 +58,29 @@ function mergeProps<T extends HTMLElement>(
   return merged;
 }
 
+const motionCache = new Map<React.ElementType, React.ElementType>();
+
+function getMotionComponent(type: React.ElementType): React.ElementType {
+  const cached = motionCache.get(type);
+  if (cached) return cached;
+  const created = motion.create(type);
+  motionCache.set(type, created);
+  return created;
+}
+
 function Slot<T extends HTMLElement = HTMLElement>({
   children,
   ref,
   ...props
 }: SlotProps<T>) {
   const isAlreadyMotion =
-    typeof children.type === 'object' &&
+    typeof children.type === "object" &&
     children.type !== null &&
     isMotionComponent(children.type);
 
-  const Base = React.useMemo(
-    () =>
-      isAlreadyMotion
-        ? (children.type as React.ElementType)
-        : motion.create(children.type as React.ElementType),
-    [isAlreadyMotion, children.type],
-  );
+  const Base = isAlreadyMotion
+    ? (children.type as React.ElementType)
+    : getMotionComponent(children.type as React.ElementType);
 
   if (!React.isValidElement(children)) return null;
 

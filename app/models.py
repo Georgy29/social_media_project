@@ -61,7 +61,9 @@ class Like(Base):
     __tablename__ = "likes"
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
+    post_id = Column(
+        Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True
+    )
 
     user = relationship("User")
     post = relationship("Post", back_populates="likes")
@@ -71,7 +73,9 @@ class Retweet(Base):
     __tablename__ = "retweets"
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
+    post_id = Column(
+        Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True
+    )
     timestamp = Column(DateTime, default=datetime.now(timezone.utc))
 
     user = relationship("User")

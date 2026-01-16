@@ -244,6 +244,7 @@ def read_posts_with_counts(
                 models.Post.owner_id.in_(followee_ids_subq),
             )
         )
+
     posts = query.order_by(models.Post.timestamp.desc()).offset(skip).limit(limit).all()
 
     response_posts = []

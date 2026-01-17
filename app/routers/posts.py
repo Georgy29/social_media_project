@@ -2,7 +2,7 @@
 from typing import Annotated, List, Literal
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from .. import auth, exceptions, models, schemas
@@ -241,7 +241,7 @@ def read_posts_with_counts(
         query = query.filter(
             or_(
                 models.Post.owner_id == current_user.id,
-                models.Post.owner_id.in_(followee_ids_subq),
+                models.Post.owner_id.in_(select(followee_ids_subq.c.followee_id)),
             )
         )
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, FutureDatetime
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, Literal
 
@@ -16,10 +16,7 @@ class User(UserBase):
     id: int
     created_at: datetime
 
-    # allows the model to be initialized using objects
-    # or ORM-like attributes instead of just plain dictionaries
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserProfile(BaseModel):
@@ -30,8 +27,7 @@ class UserProfile(BaseModel):
     following_count: int
     posts_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Token schemas
@@ -60,8 +56,7 @@ class Post(PostBase):
     timestamp: datetime
     owner_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostWithCounts(Post):
@@ -82,8 +77,7 @@ class TimelineItem(BaseModel):
 class PostUpdate(BaseModel):
     content: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Like schema
@@ -93,8 +87,7 @@ class Like(BaseModel):
     user_id: str
     post_id: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Retweet schema
@@ -103,5 +96,4 @@ class Retweet(BaseModel):
     post_id: str
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

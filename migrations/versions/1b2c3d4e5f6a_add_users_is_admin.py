@@ -19,11 +19,12 @@ depends_on = None
 def upgrade() -> None:
     op.add_column(
         "users",
-        sa.Column("is_admin", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column(
+            "is_admin", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
     )
     op.alter_column("users", "is_admin", server_default=None)
 
 
 def downgrade() -> None:
     op.drop_column("users", "is_admin")
-

@@ -7,8 +7,6 @@ from alembic import context
 
 from app.settings import DATABASE_URL
 from app.database import Base
-import app.models
-
 
 
 # this is the Alembic Config object, which provides
@@ -64,7 +62,7 @@ def run_migrations_online() -> None:
 
     """
     config.set_main_option("sqlalchemy.url", DATABASE_URL)
-    
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -72,9 +70,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

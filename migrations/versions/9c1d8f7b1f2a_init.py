@@ -1,7 +1,7 @@
 """init
 
 Revision ID: 9c1d8f7b1f2a
-Revises: 
+Revises:
 Create Date: 2026-01-14
 """
 
@@ -82,4 +82,3 @@ def downgrade() -> None:
     op.drop_index("ix_users_id", table_name="users")
     op.drop_index("ix_users_email", table_name="users")
     op.drop_table("users")
-

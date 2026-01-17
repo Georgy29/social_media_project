@@ -1,4 +1,4 @@
-﻿from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.session import Session
 
 
 from sqlalchemy import create_engine, event
@@ -16,6 +16,7 @@ if DATABASE_URL.startswith("sqlite"):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+
 
 SessionLocal = sessionmaker[Session](autocommit=False, autoflush=False, bind=engine)
 

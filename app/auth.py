@@ -61,3 +61,9 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
+    return current_user

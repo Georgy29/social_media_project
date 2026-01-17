@@ -5,6 +5,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -36,6 +37,15 @@ def db_session():
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
+    session.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(sess, trans):
+        if (
+            trans.nested and not trans._parent.nested
+        ):  # might break tests in SQLite (good for Postgres)
+            sess.begin_nested()
+
     try:
         yield session
     finally:

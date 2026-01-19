@@ -133,10 +133,9 @@ def complete_media(
                 "Upload not found yet. Please upload the file before completing."
             )
         if code in {"403", "AccessDenied"}:
-            # Log for debugging - could be permission issue or missing object
-            # logger.warning(f"S3 access denied for {media.object_key}: {e}")
-            exceptions.raise_conflict_exception(
-                "Upload not found yet. Please upload the file before completing."
+            raise HTTPException(
+                status_code=500,
+                detail="Permission error: access denied for the requested object.",
             )
         raise
 

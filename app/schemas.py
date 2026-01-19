@@ -32,6 +32,10 @@ class UserProfile(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AvatarUpdate(BaseModel):
+    media_id: Optional[int] = None
+
+
 # Token schemas
 
 

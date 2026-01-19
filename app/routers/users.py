@@ -10,6 +10,7 @@ from ..exceptions import (
     raise_not_found_exception,
     raise_bad_request_exception,
     raise_conflict_exception,
+    raise_forbidden_exception,
 )
 from ..queries.timeline import fetch_user_timeline
 
@@ -23,7 +24,16 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.get("/me", response_model=schemas.User)
 def read_me(current_user: models.User = Depends(auth.get_current_user)):
-    return current_user
+    avatar_url = (
+        current_user.avatar_media.public_url if current_user.avatar_media else None
+    )
+    return schemas.User(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        created_at=current_user.created_at,
+        avatar_url=avatar_url,
+    )
 
 
 @router.get("/{username}", response_model=schemas.UserProfile)
@@ -59,6 +69,7 @@ def get_user_profile(username: str, db: db_dependency):
         followers_count=followers_count or 0,
         following_count=following_count or 0,
         posts_count=posts_count or 0,
+        avatar_url=user.avatar_media.public_url if user.avatar_media else None,
     )
 
 
@@ -91,7 +102,13 @@ def create_user(user: schemas.UserCreate, db: db_dependency):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    return schemas.User(
+        id=new_user.id,
+        username=new_user.username,
+        email=new_user.email,
+        created_at=new_user.created_at,
+        avatar_url=None,
+    )
 
 
 # Follow User Endpoint
@@ -130,3 +147,46 @@ def unfollow_user(
     current_user.following.remove(user_to_unfollow)
     db.commit()
     return
+
+
+@router.put("/me/avatar", response_model=schemas.User)
+def update_avatar(
+    payload: schemas.AvatarUpdate,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    if payload.media_id is None:
+        current_user.avatar_media_id = None
+        db.add(current_user)
+        db.commit()
+        db.refresh(current_user)
+        return schemas.User(
+            id=current_user.id,
+            username=current_user.username,
+            email=current_user.email,
+            created_at=current_user.created_at,
+            avatar_url=None,
+        )
+
+    media = db.query(models.Media).filter(models.Media.id == payload.media_id).first()
+    if not media:
+        raise_not_found_exception("Media not found")
+    if media.owner_id != current_user.id:
+        raise_forbidden_exception("Not allowed to use this media")
+    if media.status != "ready":
+        raise_conflict_exception("Media is not ready")
+    if media.kind != "avatar":
+        raise_bad_request_exception("Invalid media kind")
+
+    current_user.avatar_media_id = media.id
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    return schemas.User(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        created_at=current_user.created_at,
+        avatar_url=media.public_url,
+    )

@@ -15,6 +15,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     created_at: datetime
+    avatar_url: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -26,6 +27,7 @@ class UserProfile(BaseModel):
     followers_count: int
     following_count: int
     posts_count: int
+    avatar_url: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,7 +50,7 @@ class PostBase(BaseModel):
 
 
 class PostCreate(PostBase):
-    pass
+    media_id: Optional[int] = None
 
 
 class Post(PostBase):
@@ -65,6 +67,7 @@ class PostWithCounts(Post):
     owner_username: str
     is_liked: bool
     is_retweeted: bool
+    media_url: Optional[str] = None
 
 
 class TimelineItem(BaseModel):
@@ -97,3 +100,22 @@ class Retweet(BaseModel):
     timestamp: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MediaPresignRequest(BaseModel):
+    filename: Optional[str] = None
+    content_type: str
+    size_bytes: int
+    kind: Literal["post_image", "avatar", "profile_cover"]
+
+
+class MediaPresignResponse(BaseModel):
+    media_id: int
+    upload_url: str
+    public_url: str
+
+
+class MediaCompleteResponse(BaseModel):
+    media_id: int
+    status: str
+    public_url: str

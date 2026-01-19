@@ -34,7 +34,23 @@ def create_new_post(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    db_post = models.Post(content=post.content, owner_id=current_user.id)
+    media_id = getattr(post, "media_id", None)
+    if media_id is not None:
+        media = db.query(models.Media).filter(models.Media.id == media_id).first()
+        if not media:
+            exceptions.raise_not_found_exception("Media not found")
+        if media.owner_id != current_user.id:
+            exceptions.raise_forbidden_exception("Not allowed to attach this media")
+        if media.status != "ready":
+            exceptions.raise_conflict_exception("Media is not ready")
+        if media.kind != "post_image":
+            exceptions.raise_bad_request_exception("Invalid media kind")
+
+    db_post = models.Post(
+        content=post.content,
+        owner_id=current_user.id,
+        media_id=media_id,
+    )
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
@@ -227,8 +243,10 @@ def read_posts_with_counts(
             func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
             liked_by_me_subq.c.post_id.isnot(None).label("is_liked"),
             retweeted_by_me_subq.c.post_id.isnot(None).label("is_retweeted"),
+            models.Media.public_url.label("media_url"),
         )
         .join(models.User, models.Post.owner_id == models.User.id)
+        .outerjoin(models.Media, models.Post.media_id == models.Media.id)
         .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
         .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
         .outerjoin(liked_by_me_subq, models.Post.id == liked_by_me_subq.c.post_id)
@@ -255,6 +273,7 @@ def read_posts_with_counts(
         retweets_count,
         is_liked,
         is_retweeted,
+        media_url,
     ) in posts:
         response_posts.append(
             schemas.PostWithCounts(
@@ -267,6 +286,7 @@ def read_posts_with_counts(
                 retweets_count=retweets_count,
                 is_liked=is_liked,
                 is_retweeted=is_retweeted,
+                media_url=media_url,
             )
         )
 

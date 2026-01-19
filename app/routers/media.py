@@ -116,7 +116,6 @@ def complete_media(
     if media.owner_id != current_user.id:
         exceptions.raise_forbidden_exception("Not allowed to complete this media")
 
-    #
     if media.status == "ready":
         return schemas.MediaCompleteResponse(
             media_id=media.id,

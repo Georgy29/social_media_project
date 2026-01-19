@@ -1,4 +1,5 @@
 import boto3
+from urllib.parse import quote
 
 from .. import settings
 
@@ -24,7 +25,7 @@ def _public_base_url(bucket: str) -> str:
 
 def public_url(bucket: str, key: str) -> str:
     base = _public_base_url(bucket)
-    return f"{base}/{key.lstrip('/')}"
+    return f"{base}/{quote(key.lstrip('/'), safe='/')}"
 
 
 def create_presigned_put_url(

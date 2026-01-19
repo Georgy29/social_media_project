@@ -22,7 +22,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     is_admin = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     avatar_media_id = Column(Integer, ForeignKey("media.id", ondelete="SET NULL"))
 
     media_items = relationship(
@@ -72,7 +72,9 @@ class Media(Base):
     __tablename__ = "media"
 
     id = Column(Integer, primary_key=True, index=True)
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    owner_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     kind = Column(String(20), nullable=False)  # "post_image", "avatar", "profile_cover"
     status = Column(String(20), nullable=False, default="pending")
     bucket = Column(String(255), nullable=False)
@@ -80,7 +82,7 @@ class Media(Base):
     content_type = Column(String(128), nullable=False)
     size_bytes = Column(Integer, nullable=False)
     public_url = Column(String(1024), nullable=False)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship(
         "User",

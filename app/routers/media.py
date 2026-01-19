@@ -64,7 +64,9 @@ def presign_media(
     _require_s3_config()
 
     max_bytes = _max_bytes_for_kind(payload.kind)
-    if payload.size_bytes <= 0 or payload.size_bytes > max_bytes:
+    if payload.size_bytes <= 0:
+        exceptions.raise_bad_request_exception("File size must be positive")
+    if payload.size_bytes > max_bytes:
         exceptions.raise_bad_request_exception("File too large")
 
     key = _build_key(current_user.id, payload.kind, payload.content_type)
@@ -126,7 +128,13 @@ def complete_media(
         head = s3.head_object(media.bucket, media.object_key)
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code")
-        if code in {"404", "NoSuchKey", "403", "AccessDenied"}:
+        if code in {"404", "NoSuchKey"}:
+            exceptions.raise_conflict_exception(
+                "Upload not found yet. Please upload the file before completing."
+            )
+        if code in {"403", "AccessDenied"}:
+            # Log for debugging - could be permission issue or missing object
+            # logger.warning(f"S3 access denied for {media.object_key}: {e}")
             exceptions.raise_conflict_exception(
                 "Upload not found yet. Please upload the file before completing."
             )

@@ -40,7 +40,7 @@ export function CreatePost({
           onChange={(e) => setContent(e.target.value)}
           placeholder="What's happening?"
           rows={3}
-          className="min-h-[96px]"
+          className="min-h-24"
           disabled={pending}
         />
         <div className="flex justify-end">

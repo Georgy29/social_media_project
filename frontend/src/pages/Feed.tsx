@@ -90,10 +90,7 @@ export default function FeedPage() {
     }
   }, [feedQuery]);
 
-  const handleCreatePost = async (
-    content: string,
-    mediaId: number | null,
-  ) => {
+  const handleCreatePost = async (content: string, mediaId: number | null) => {
     const payload = mediaId ? { content, media_id: mediaId } : { content };
     try {
       await createPostMutation.mutateAsync(payload);
@@ -283,9 +280,7 @@ export default function FeedPage() {
                           {
                             onSuccess: () => {
                               toast.success(
-                                p.is_retweeted
-                                  ? "Repost removed"
-                                  : "Reposted",
+                                p.is_retweeted ? "Repost removed" : "Reposted",
                               );
                             },
                             onError: (e: ApiError) => {

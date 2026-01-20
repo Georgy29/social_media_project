@@ -16,7 +16,10 @@ type PostComposerDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pending?: boolean;
-  onCreate: (content: string, mediaId: number | null) => Promise<boolean> | boolean;
+  onCreate: (
+    content: string,
+    mediaId: number | null,
+  ) => Promise<boolean> | boolean;
 };
 
 export function PostComposerDialog({

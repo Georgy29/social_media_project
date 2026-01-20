@@ -5,11 +5,7 @@ import { completeMedia, presignMedia } from "./endpoints";
 type MediaKind = components["schemas"]["MediaPresignRequest"]["kind"];
 
 const AVATAR_MAX_SIZE = 256;
-const ALLOWED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 async function loadImageSource(file: File): Promise<CanvasImageSource> {
   if (typeof createImageBitmap === "function") {
@@ -35,7 +31,10 @@ async function loadImageSource(file: File): Promise<CanvasImageSource> {
   });
 }
 
-function getImageSize(source: CanvasImageSource): { width: number; height: number } {
+function getImageSize(source: CanvasImageSource): {
+  width: number;
+  height: number;
+} {
   if (source instanceof HTMLImageElement) {
     return { width: source.naturalWidth, height: source.naturalHeight };
   }
@@ -109,8 +108,7 @@ async function resizeAvatarImage(file: File): Promise<File> {
 }
 
 export async function uploadMediaFromDevice(file: File, kind: MediaKind) {
-  const uploadFile =
-    kind === "avatar" ? await resizeAvatarImage(file) : file;
+  const uploadFile = kind === "avatar" ? await resizeAvatarImage(file) : file;
   const presign = await presignMedia({
     content_type: uploadFile.type,
     size_bytes: uploadFile.size,

@@ -30,9 +30,8 @@ Frontend (must ship)
 - [x] Like/retweet buttons
 - [x] Basic loading/errors/toasts
 
-Explicitly NOT MVP
+Explicitly NOT MVP (v0 scope)
 - [ ] Comments
-- [ ] Media uploads (images/videos)
 - [ ] Redis
 - [ ] PKCE/OIDC
 - [ ] AI features
@@ -93,20 +92,41 @@ Definition of done
 Goal: ship backend endpoints + migrations needed by the UI you already started (Profile nav, Subscriptions tab, Upload CTA).
 
 - [ ] Subscriptions feed (follow-based)
-  - [ ] Backend: extend `GET /posts/with_counts/` with a filter (e.g. `view=public|subscriptions`) and return only posts from users I follow (and optionally my own).
-  - [ ] Frontend: when “Subscriptions” tab is selected, pass the filter param and keep pagination working.
+  - [x] Backend: extend `GET /posts/with_counts/` with a filter (e.g. `view=public|subscriptions`) and return only posts from users I follow (and optionally my own).
+  - [x] Frontend: when “Subscriptions” tab is selected, pass the filter param and keep pagination working.
 
 - [ ] Profile page + timeline
-  - [ ] Backend: `GET /users/{username}` (public profile + follower/following/post counts).
-  - [ ] Backend: `GET /users/{username}/timeline?skip&limit` (user posts + reposts, newest first).
+  - [x] Backend: `GET /users/{username}` (public profile + follower/following/post counts).
+  - [x] Backend: `GET /users/{username}/timeline?skip&limit` (user posts + reposts, newest first).
   - [ ] Frontend: add `/profile/:username` route and wire Profile nav to it.
 
 - [ ] Media uploads (posts + avatars)
-  - [ ] Backend: add `media` table + Alembic migration.
-  - [ ] Backend: `POST /media/presign` (auth) returning `{ media_id, upload_url, public_url }`.
-  - [ ] Backend: posts accept optional `media_id` and feed includes optional `media_url`.
-  - [ ] Backend: `PUT /users/me/avatar` to set avatar (recommend: `media_id`-based).
-  - [ ] Frontend: implement “Upload from device” flow: choose file → presign → upload → create post / set avatar.
+  - [x] Backend: add `media` table + Alembic migration.
+  - [x] Backend: `POST /media/presign` (auth) returning `{ media_id, upload_url, public_url }`.
+  - [x] Backend: `POST /media/{media_id}/complete` (auth) to mark media ready.
+  - [x] Backend: posts accept optional `media_id` and feed includes optional `media_url`.
+  - [x] Backend: `PUT /users/me/avatar` to set avatar (`media_id`-based).
+  - [x] Backend: `PUT /users/me/cover` to set profile cover (`media_id`-based).
+  - [x] Frontend: implement post image upload: choose file → presign → PUT upload_url → complete → create post (media_id).
+  - [ ] Frontend: implement avatar upload: presign → PUT upload_url → complete → `PUT /users/me/avatar`.
+  - [ ] Frontend: implement cover upload: presign → PUT upload_url → complete → `PUT /users/me/cover`.
+
+## Milestone 1.6 — Frontend wiring for Media + Profile (Release 1)
+Goal: ship the first “portfolio release” with media + a real profile page.
+
+- [ ] Regenerate OpenAPI TS types (`frontend/openapi.json` → `frontend/src/api/types.ts`)
+- [ ] Wire feed “Subscriptions” tab to pass `view=subscriptions`
+- [x] Wire feed “Subscriptions” tab to pass `view=subscriptions`
+- [x] Render `media_url` in the post card UI (feed)
+- [ ] Wire composer “Upload from device”:
+  - [x] post image upload: presign(kind=post_image) → PUT → complete → create post(media_id)
+  - [ ] avatar upload: presign(kind=avatar) → PUT → complete → `PUT /users/me/avatar`
+  - [ ] cover upload: presign(kind=profile_cover) → PUT → complete → `PUT /users/me/cover`
+- [ ] Add a `/profile/:username` page using `GET /users/{username}`
+- [ ] Wire left nav “Profile” to `/profile/:username` (for me, use `/users/me` to find username)
+- [ ] Make non-wired UI honest:
+  - [ ] either hide Search/Settings or route them to “Coming soon” pages
+  - [ ] keep right sidebar (Trends/Who to follow) as static placeholder content for v1
 
 ## Milestone 2 — Quality pass (tests + CI)
 Goal: the repo looks like a teammate could safely work on it.

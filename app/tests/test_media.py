@@ -153,3 +153,32 @@ def test_update_avatar_rejects_non_avatar_kind(client, db_session):
     )
 
     assert response.status_code == 400
+
+
+def test_update_cover_rejects_non_cover_kind(client, db_session):
+    suffix = uuid.uuid4().hex[:8]
+    username = f"user_{suffix}"
+    email = f"{username}@example.com"
+    password = "test-password"
+
+    assert register_user(client, username, email, password).status_code == 200
+    token = login_user(client, username, password).json()["access_token"]
+
+    presign = presign_media(
+        client,
+        token,
+        {"content_type": "image/jpeg", "size_bytes": 123, "kind": "post_image"},
+    )
+    media_id = presign.json()["media_id"]
+
+    media = db_session.query(models.Media).filter(models.Media.id == media_id).first()
+    media.status = "ready"
+    db_session.commit()
+
+    response = client.put(
+        "/users/me/cover",
+        json={"media_id": media_id},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 400

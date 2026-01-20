@@ -25,7 +25,7 @@ def _default_test_database_url() -> str:
 # Point tests to a dedicated DB.
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", _default_test_database_url())
 
-# Important: set DATABASE_URL before importing app/settings
+# set DATABASE_URL before importing app/settings
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 from app.main import app  # noqa: E402

@@ -75,6 +75,7 @@ class PostWithCounts(Post):
     likes_count: int
     retweets_count: int
     owner_username: str
+    owner_avatar_url: Optional[str] = None
     is_liked: bool
     is_retweeted: bool
     media_url: Optional[str] = None

@@ -86,6 +86,7 @@ def get_user_profile(username: str, db: db_dependency):
 def get_user_timeline(
     username: str,
     db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
     skip: int = 0,
     limit: int = 10,
 ):
@@ -93,7 +94,7 @@ def get_user_timeline(
     if not user:
         raise_not_found_exception("User not found")
 
-    return fetch_user_timeline(db, user.id, skip, limit)
+    return fetch_user_timeline(db, user.id, current_user.id, skip, limit)
 
 
 # User Registration Endpoint

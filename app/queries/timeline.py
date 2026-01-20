@@ -1,7 +1,7 @@
 from typing import List
 
 from sqlalchemy import func, literal
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from .. import models, schemas
 
@@ -9,9 +9,11 @@ from .. import models, schemas
 def fetch_user_timeline(
     db: Session,
     user_id: int,
+    viewer_id: int,
     skip: int,
     limit: int,
 ) -> List[schemas.TimelineItem]:
+    avatar_media = aliased(models.Media)
     likes_subq = (
         db.query(
             models.Like.post_id, func.count(models.Like.user_id).label("likes_count")
@@ -29,6 +31,18 @@ def fetch_user_timeline(
         .subquery()
     )
 
+    liked_by_viewer_subq = (
+        db.query(models.Like.post_id.label("post_id"))
+        .filter(models.Like.user_id == viewer_id)
+        .subquery()
+    )
+
+    retweeted_by_viewer_subq = (
+        db.query(models.Retweet.post_id.label("post_id"))
+        .filter(models.Retweet.user_id == viewer_id)
+        .subquery()
+    )
+
     base_posts_q = (
         db.query(
             models.Post.id.label("post_id"),
@@ -36,17 +50,26 @@ def fetch_user_timeline(
             models.Post.timestamp.label("post_timestamp"),
             models.Post.owner_id.label("owner_id"),
             models.User.username.label("owner_username"),
+            avatar_media.public_url.label("owner_avatar_url"),
             func.coalesce(likes_subq.c.likes_count, 0).label("likes_count"),
             func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
-            literal(False).label("is_liked"),
-            literal(False).label("is_retweeted"),
+            liked_by_viewer_subq.c.post_id.isnot(None).label("is_liked"),
+            retweeted_by_viewer_subq.c.post_id.isnot(None).label("is_retweeted"),
+            models.Media.public_url.label("media_url"),
             models.Post.timestamp.label("activity_at"),
             literal("posts").label("item_type"),
             literal(None).label("reposted_at"),
         )
         .join(models.User, models.Post.owner_id == models.User.id)
+        .outerjoin(models.Media, models.Post.media_id == models.Media.id)
+        .outerjoin(avatar_media, models.User.avatar_media_id == avatar_media.id)
         .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
         .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
+        .outerjoin(liked_by_viewer_subq, models.Post.id == liked_by_viewer_subq.c.post_id)
+        .outerjoin(
+            retweeted_by_viewer_subq,
+            models.Post.id == retweeted_by_viewer_subq.c.post_id,
+        )
         .filter(models.Post.owner_id == user_id)
     )
 
@@ -57,18 +80,27 @@ def fetch_user_timeline(
             models.Post.timestamp.label("post_timestamp"),
             models.Post.owner_id.label("owner_id"),
             models.User.username.label("owner_username"),
+            avatar_media.public_url.label("owner_avatar_url"),
             func.coalesce(likes_subq.c.likes_count, 0).label("likes_count"),
             func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
-            literal(False).label("is_liked"),
-            literal(False).label("is_retweeted"),
+            liked_by_viewer_subq.c.post_id.isnot(None).label("is_liked"),
+            retweeted_by_viewer_subq.c.post_id.isnot(None).label("is_retweeted"),
+            models.Media.public_url.label("media_url"),
             models.Retweet.timestamp.label("activity_at"),
             literal("retweets").label("item_type"),
             models.Retweet.timestamp.label("reposted_at"),
         )
         .join(models.Post, models.Retweet.post_id == models.Post.id)
         .join(models.User, models.Post.owner_id == models.User.id)
+        .outerjoin(models.Media, models.Post.media_id == models.Media.id)
+        .outerjoin(avatar_media, models.User.avatar_media_id == avatar_media.id)
         .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
         .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
+        .outerjoin(liked_by_viewer_subq, models.Post.id == liked_by_viewer_subq.c.post_id)
+        .outerjoin(
+            retweeted_by_viewer_subq,
+            models.Post.id == retweeted_by_viewer_subq.c.post_id,
+        )
         .filter(models.Retweet.user_id == user_id)
     )
 
@@ -90,10 +122,12 @@ def fetch_user_timeline(
             timestamp=row.post_timestamp,
             owner_id=row.owner_id,
             owner_username=row.owner_username,
+            owner_avatar_url=row.owner_avatar_url,
             likes_count=row.likes_count,
             retweets_count=row.retweets_count,
             is_liked=row.is_liked,
             is_retweeted=row.is_retweeted,
+            media_url=row.media_url,
         )
         response_items.append(
             schemas.TimelineItem(

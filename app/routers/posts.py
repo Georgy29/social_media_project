@@ -3,7 +3,7 @@ from typing import Annotated, List, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from .. import auth, exceptions, models, schemas
 from ..database import get_db
@@ -20,7 +20,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 def read_posts(db: db_dependency, skip: int = 0, limit: int = 10):
     posts = (
         db.query(models.Post)
-        .order_by(models.Post.timestamp.desc())
+        .order_by(models.Post.timestamp.desc(), models.Post.id.desc())
         .offset(skip)
         .limit(limit)
         .all()
@@ -200,6 +200,7 @@ def read_posts_with_counts(
     limit: int = Query(10, ge=1, le=100),
     view: Literal["public", "subscriptions"] = Query("public"),
 ):
+    avatar_media = aliased(models.Media)
     followee_ids_subq = (
         db.query(models.Follow.c.followee_id)
         .filter(models.Follow.c.follower_id == current_user.id)
@@ -239,6 +240,7 @@ def read_posts_with_counts(
         db.query(
             models.Post,
             models.User.username.label("owner_username"),
+            avatar_media.public_url.label("owner_avatar_url"),
             func.coalesce(likes_subq.c.likes_count, 0).label("likes_count"),
             func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
             liked_by_me_subq.c.post_id.isnot(None).label("is_liked"),
@@ -247,6 +249,7 @@ def read_posts_with_counts(
         )
         .join(models.User, models.Post.owner_id == models.User.id)
         .outerjoin(models.Media, models.Post.media_id == models.Media.id)
+        .outerjoin(avatar_media, models.User.avatar_media_id == avatar_media.id)
         .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
         .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
         .outerjoin(liked_by_me_subq, models.Post.id == liked_by_me_subq.c.post_id)
@@ -263,12 +266,18 @@ def read_posts_with_counts(
             )
         )
 
-    posts = query.order_by(models.Post.timestamp.desc()).offset(skip).limit(limit).all()
+    posts = (
+        query.order_by(models.Post.timestamp.desc(), models.Post.id.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
     response_posts = []
     for (
         post,
         owner_username,
+        owner_avatar_url,
         likes_count,
         retweets_count,
         is_liked,
@@ -279,14 +288,15 @@ def read_posts_with_counts(
             schemas.PostWithCounts(
                 id=post.id,
                 content=post.content,
-                timestamp=post.timestamp,
-                owner_id=post.owner_id,
-                owner_username=owner_username,
-                likes_count=likes_count,
-                retweets_count=retweets_count,
-                is_liked=is_liked,
-                is_retweeted=is_retweeted,
-                media_url=media_url,
+            timestamp=post.timestamp,
+            owner_id=post.owner_id,
+            owner_username=owner_username,
+            owner_avatar_url=owner_avatar_url,
+            likes_count=likes_count,
+            retweets_count=retweets_count,
+            is_liked=is_liked,
+            is_retweeted=is_retweeted,
+            media_url=media_url,
             )
         )
 

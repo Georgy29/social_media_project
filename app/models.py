@@ -24,6 +24,9 @@ class User(Base):
     is_admin = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     avatar_media_id = Column(Integer, ForeignKey("media.id", ondelete="SET NULL"))
+    profile_cover_media_id = Column(
+        Integer, ForeignKey("media.id", ondelete="SET NULL")
+    )
 
     media_items = relationship(
         "Media",
@@ -33,6 +36,9 @@ class User(Base):
     )
     posts = relationship("Post", back_populates="owner")
     avatar_media = relationship("Media", foreign_keys=[avatar_media_id])
+    profile_cover_media = relationship(
+        "Media", foreign_keys=[profile_cover_media_id]
+    )
 
     followers = relationship(
         "User",

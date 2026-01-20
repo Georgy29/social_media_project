@@ -1,11 +1,11 @@
-# S3 Media Feature (Posts + Avatars + Thumbnails)
+# S3 Media Feature (Posts + Avatars + Profile Covers + Thumbnails)
 
 Goal: add image uploads without sending file bytes through FastAPI.
 
 MVP constraints:
 - Storage: AWS S3
 - Media type: images only (`jpeg`, `png`, `webp`)
-- Limits: posts max **5MB**, avatars max **2MB**
+- Limits: posts max **5MB**, avatars max **2MB**, covers max **5MB**
 - Post attachments: **1 image per post**
 - Serving: **public S3 URLs** (simplest + cheapest for portfolio)
 
@@ -71,7 +71,7 @@ Budget notes:
 Suggested columns:
 - `id` (int PK)
 - `owner_id` (FK users.id, required)
-- `kind` (`post_image` | `avatar`)
+- `kind` (`post_image` | `avatar` | `profile_cover`)
 - `status` (`pending` | `ready`)
 - `bucket` (string)
 - `object_key` (string, unique)
@@ -83,6 +83,7 @@ Suggested columns:
 ### 2) Link media to posts/users
 - `posts.media_id` nullable FK → `media.id`
 - `users.avatar_media_id` nullable FK → `media.id`
+- `users.profile_cover_media_id` nullable FK → `media.id`
 
 ### 3) Alembic migration
 - Create `media` table
@@ -124,7 +125,7 @@ Input:
 - `filename` (optional; used only for extension)
 - `content_type`
 - `size_bytes`
-- `kind` (`post_image` | `avatar`)
+- `kind` (`post_image` | `avatar` | `profile_cover`)
 
 Validation (before presign):
 - `content_type` allowlist: `image/jpeg`, `image/png`, `image/webp`
@@ -171,6 +172,14 @@ Update profile responses:
   - `GET /users/me`
   - `GET /users/{username}`
   - Feed post owner (optional, later)
+  - Add optional `cover_url` to:
+    - `GET /users/me`
+    - `GET /users/{username}`
+
+### 5) Profile covers
+Add `PUT /users/me/cover`:
+- Body: `{ "media_id": ... }` (or `{ "media_id": null }` to clear)
+- Validate media belongs to current user, `kind==profile_cover`, `status==ready`
 
 ---
 
@@ -245,4 +254,5 @@ Frontend sync:
 - [ ] Add `/media/presign` + `/media/{id}/complete`
 - [ ] Posts accept `media_id` and feed returns `media_url`
 - [ ] Add avatar endpoint + profile returns `avatar_url`
+- [ ] Add cover endpoint + profile returns `cover_url`
 - [ ] Add mockable S3 layer + tests for permissions/validation

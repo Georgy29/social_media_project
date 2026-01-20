@@ -27,12 +27,18 @@ def read_me(current_user: models.User = Depends(auth.get_current_user)):
     avatar_url = (
         current_user.avatar_media.public_url if current_user.avatar_media else None
     )
+    cover_url = (
+        current_user.profile_cover_media.public_url
+        if current_user.profile_cover_media
+        else None
+    )
     return schemas.User(
         id=current_user.id,
         username=current_user.username,
         email=current_user.email,
         created_at=current_user.created_at,
         avatar_url=avatar_url,
+        cover_url=cover_url,
     )
 
 
@@ -70,6 +76,9 @@ def get_user_profile(username: str, db: db_dependency):
         following_count=following_count or 0,
         posts_count=posts_count or 0,
         avatar_url=user.avatar_media.public_url if user.avatar_media else None,
+        cover_url=user.profile_cover_media.public_url
+        if user.profile_cover_media
+        else None,
     )
 
 
@@ -108,6 +117,7 @@ def create_user(user: schemas.UserCreate, db: db_dependency):
         email=new_user.email,
         created_at=new_user.created_at,
         avatar_url=None,
+        cover_url=None,
     )
 
 
@@ -160,12 +170,18 @@ def update_avatar(
         db.add(current_user)
         db.commit()
         db.refresh(current_user)
+        cover_url = (
+            current_user.profile_cover_media.public_url
+            if current_user.profile_cover_media
+            else None
+        )
         return schemas.User(
             id=current_user.id,
             username=current_user.username,
             email=current_user.email,
             created_at=current_user.created_at,
             avatar_url=None,
+            cover_url=cover_url,
         )
 
     media = db.query(models.Media).filter(models.Media.id == payload.media_id).first()
@@ -189,4 +205,57 @@ def update_avatar(
         email=current_user.email,
         created_at=current_user.created_at,
         avatar_url=media.public_url,
+        cover_url=current_user.profile_cover_media.public_url
+        if current_user.profile_cover_media
+        else None,
+    )
+
+
+@router.put("/me/cover", response_model=schemas.User)
+def update_cover(
+    payload: schemas.CoverUpdate,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    if payload.media_id is None:
+        current_user.profile_cover_media_id = None
+        db.add(current_user)
+        db.commit()
+        db.refresh(current_user)
+        avatar_url = (
+            current_user.avatar_media.public_url if current_user.avatar_media else None
+        )
+        return schemas.User(
+            id=current_user.id,
+            username=current_user.username,
+            email=current_user.email,
+            created_at=current_user.created_at,
+            avatar_url=avatar_url,
+            cover_url=None,
+        )
+
+    media = db.query(models.Media).filter(models.Media.id == payload.media_id).first()
+    if not media:
+        raise_not_found_exception("Media not found")
+    if media.owner_id != current_user.id:
+        raise_forbidden_exception("Not allowed to use this media")
+    if media.status != "ready":
+        raise_conflict_exception("Media is not ready")
+    if media.kind != "profile_cover":
+        raise_bad_request_exception("Invalid media kind")
+
+    current_user.profile_cover_media_id = media.id
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    return schemas.User(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        created_at=current_user.created_at,
+        avatar_url=current_user.avatar_media.public_url
+        if current_user.avatar_media
+        else None,
+        cover_url=media.public_url,
     )

@@ -43,11 +43,18 @@ export function PostComposerDialog({
   }, [open]);
 
   const handleCreate = async (content: string) => {
-    const didCreate = await Promise.resolve(onCreate(content, mediaId));
-    if (didCreate) {
-      setMediaId(null);
-      setMediaName(null);
-      onOpenChange(false);
+    try {
+      const didCreate = await Promise.resolve(onCreate(content, mediaId));
+      if (didCreate) {
+        setMediaId(null);
+        setMediaName(null);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create post";
+      toast.error(message);
+      return;
     }
   };
 
@@ -64,7 +71,7 @@ export function PostComposerDialog({
               aria-hidden="true"
             />
           </div>
-          <div className="text-sm font-medium">Add photo or video</div>
+          <div className="text-sm font-medium">Add image to your post</div>
           <div className="text-muted-foreground mt-1 text-xs">
             Upload from your device or choose from Social.
           </div>

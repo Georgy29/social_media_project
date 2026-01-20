@@ -7,15 +7,26 @@ from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import event
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
-# Point tests to a dedicated DB.
-TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    "postgresql+psycopg://postgres:postgres@localhost:5432/microblog_test",
-)
 
-# Important: set DATABASE_URL before importing app/settings
+def _default_test_database_url() -> str:
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        try:
+            url = make_url(database_url)
+            return str(url.set(database="microblog_test"))
+        except Exception:
+            pass
+
+    return "postgresql+psycopg://postgres:postgres@localhost:5432/microblog_test"
+
+
+# Point tests to a dedicated DB.
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", _default_test_database_url())
+
+# set DATABASE_URL before importing app/settings
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 from app.main import app  # noqa: E402

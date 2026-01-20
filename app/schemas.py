@@ -17,6 +17,7 @@ class User(UserBase):
     created_at: datetime
     avatar_url: Optional[str] = None
     cover_url: Optional[str] = None
+    bio: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,10 +29,16 @@ class UserProfile(BaseModel):
     followers_count: int
     following_count: int
     posts_count: int
+    is_followed_by_viewer: bool = False
     avatar_url: Optional[str] = None
     cover_url: Optional[str] = None
+    bio: Optional[str] = None
+
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserProfileUpdate(BaseModel):
+    bio: Optional[str] = None
 
 
 class AvatarUpdate(BaseModel):

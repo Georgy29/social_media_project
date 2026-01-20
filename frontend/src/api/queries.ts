@@ -12,29 +12,53 @@ import {
   deletePost,
   getFeed,
   getMe,
+  getUserProfile,
+  getUserTimeline,
   likePost,
   loginUser,
+  presignMedia,
+  completeMedia,
   registerUser,
   retweetPost,
   unlikePost,
   unretweetPost,
   updatePost,
+  updateAvatar,
+  updateCover,
 } from "./endpoints";
 import { clearToken, getToken, setToken, type ApiError } from "./client";
 
 type Token = components["schemas"]["Token"];
 type User = components["schemas"]["User"];
 type UserCreate = components["schemas"]["UserCreate"];
+type UserProfile = components["schemas"]["UserProfile"];
 type Post = components["schemas"]["Post"];
 type PostCreate = components["schemas"]["PostCreate"];
 type PostUpdate = components["schemas"]["PostUpdate"];
 type PostWithCounts = components["schemas"]["PostWithCounts"];
+type MediaPresignRequest = components["schemas"]["MediaPresignRequest"];
+type MediaPresignResponse = components["schemas"]["MediaPresignResponse"];
+type MediaCompleteResponse = components["schemas"]["MediaCompleteResponse"];
+type AvatarUpdate = components["schemas"]["AvatarUpdate"];
+type CoverUpdate = components["schemas"]["CoverUpdate"];
+type TimelineItem = components["schemas"]["TimelineItem"];
 
 type FeedQuery =
   operations["read_posts_with_counts_posts_with_counts__get"]["parameters"]["query"];
+type TimelineQuery =
+  operations["get_user_timeline_users__username__timeline_get"]["parameters"]["query"];
 
 export const queryKeys = {
   me: ["me"] as const,
+  profile: {
+    root: ["profile"] as const,
+    detail: (username: string) => ["profile", username] as const,
+  },
+  timeline: {
+    root: ["timeline"] as const,
+    list: (username: string, params: TimelineQuery) =>
+      ["timeline", username, params] as const,
+  },
   feed: {
     root: ["feed"] as const,
     list: (params: FeedQuery) => ["feed", params] as const,
@@ -102,6 +126,26 @@ export function useFeedQuery(params: FeedQuery = {}) {
   });
 }
 
+export function useUserProfileQuery(username?: string) {
+  return useQuery<UserProfile, ApiError>({
+    queryKey: queryKeys.profile.detail(username ?? ""),
+    queryFn: () => getUserProfile(username ?? ""),
+    enabled: Boolean(username),
+  });
+}
+
+export function useUserTimelineQuery(
+  username?: string,
+  params: TimelineQuery = {},
+) {
+  return useQuery<TimelineItem[], ApiError>({
+    queryKey: queryKeys.timeline.list(username ?? "", params),
+    queryFn: () => getUserTimeline(username ?? "", params),
+    enabled: Boolean(username),
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useCreatePostMutation() {
   const queryClient = useQueryClient();
 
@@ -109,6 +153,7 @@ export function useCreatePostMutation() {
     mutationFn: createPost,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
     },
   });
 }
@@ -120,6 +165,7 @@ export function useUpdatePostMutation() {
     mutationFn: ({ postId, payload }) => updatePost(postId, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
     },
   });
 }
@@ -131,6 +177,7 @@ export function useDeletePostMutation() {
     mutationFn: ({ postId }) => deletePost(postId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
     },
   });
 }
@@ -148,6 +195,7 @@ export function useToggleLikeMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
     },
   });
 }
@@ -165,6 +213,43 @@ export function useToggleRetweetMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
+    },
+  });
+}
+
+export function usePresignMediaMutation() {
+  return useMutation<MediaPresignResponse, ApiError, MediaPresignRequest>({
+    mutationFn: presignMedia,
+  });
+}
+
+export function useCompleteMediaMutation() {
+  return useMutation<MediaCompleteResponse, ApiError, { mediaId: number }>({
+    mutationFn: ({ mediaId }) => completeMedia(mediaId),
+  });
+}
+
+export function useUpdateAvatarMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<User, ApiError, AvatarUpdate>({
+    mutationFn: updateAvatar,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile.root });
+    },
+  });
+}
+
+export function useUpdateCoverMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<User, ApiError, CoverUpdate>({
+    mutationFn: updateCover,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile.root });
     },
   });
 }

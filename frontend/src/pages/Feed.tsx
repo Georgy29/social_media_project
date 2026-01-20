@@ -1,16 +1,16 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   IconHome,
   IconSearch,
   IconSettings,
-  IconUpload,
   IconUser,
 } from "@tabler/icons-react";
 
 import { CreatePost } from "@/components/CreatePost";
 import { Logo } from "@/components/Logo";
+import { PostComposerDialog } from "@/components/PostComposerDialog";
 import { PostCard } from "@/components/PostCard";
 import {
   AlertDialog,
@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/animate-ui/components/radix/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -31,12 +32,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { type ApiError } from "@/api/client";
@@ -59,8 +54,12 @@ export default function FeedPage() {
   const meQuery = useMeQuery();
 
   const [page, setPage] = useState(0);
+  const [feedView, setFeedView] = useState<FeedView>("public");
   const limit = 10;
-  const params = useMemo(() => ({ skip: page * limit, limit }), [page, limit]);
+  const params = useMemo(
+    () => ({ skip: page * limit, limit, view: feedView }),
+    [page, limit, feedView],
+  );
 
   const feedQuery = useFeedQuery(params);
   const createPostMutation = useCreatePostMutation();
@@ -68,10 +67,12 @@ export default function FeedPage() {
   const deletePostMutation = useDeletePostMutation();
   const toggleLikeMutation = useToggleLikeMutation();
   const toggleRetweetMutation = useToggleRetweetMutation();
-  const [feedView, setFeedView] = useState<FeedView>("public");
   const [composerOpen, setComposerOpen] = useState(false);
   const username = meQuery.data?.username ?? "guest";
   const initials = username.slice(0, 2).toUpperCase();
+  const profilePath = meQuery.data?.username
+    ? `/profile/${meQuery.data.username}`
+    : "/feed";
 
   const isMutating =
     createPostMutation.isPending ||
@@ -79,21 +80,30 @@ export default function FeedPage() {
     deletePostMutation.isPending ||
     toggleLikeMutation.isPending ||
     toggleRetweetMutation.isPending;
-  const isRefreshing = feedQuery.isFetching && !feedQuery.isPending;
+  const isRefreshing = feedQuery.isFetching && feedQuery.isPlaceholderData;
 
-  const handleCreatePost = (content: string, closeDialog = false) => {
-    createPostMutation.mutate(
-      { content },
-      {
-        onSuccess: () => {
-          toast.success("Posted");
-          if (closeDialog) {
-            setComposerOpen(false);
-          }
-        },
-        onError: (e: ApiError) => toast.error(e.message),
-      },
-    );
+  const handleHomeClick = useCallback(() => {
+    setPage(0);
+    feedQuery.refetch();
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [feedQuery]);
+
+  const handleCreatePost = async (
+    content: string,
+    mediaId: number | null,
+  ) => {
+    const payload = mediaId ? { content, media_id: mediaId } : { content };
+    try {
+      await createPostMutation.mutateAsync(payload);
+      toast.success("Posted");
+      return true;
+    } catch (e) {
+      const error = e as ApiError;
+      toast.error(error.message);
+      return false;
+    }
   };
   const handleLogout = () => {
     logout();
@@ -101,7 +111,7 @@ export default function FeedPage() {
   };
 
   return (
-    <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+    <>
       <AlertDialog>
         <div className="bg-background text-foreground min-h-screen w-full">
           <div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_240px]">
@@ -112,11 +122,19 @@ export default function FeedPage() {
                     className="h-auto w-full justify-start gap-3 px-3 py-2"
                     variant="ghost"
                     aria-label="View profile"
-                    onClick={() => navigate("/feed")}
+                    onClick={() => navigate(profilePath)}
                   >
-                    <div className="bg-muted text-muted-foreground flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold">
-                      {initials}
-                    </div>
+                    <Avatar className="size-10">
+                      {meQuery.data?.avatar_url ? (
+                        <AvatarImage
+                          src={meQuery.data.avatar_url}
+                          alt={username}
+                        />
+                      ) : null}
+                      <AvatarFallback className="text-sm font-semibold">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="text-left">
                       <div className="text-sm font-semibold">{username}</div>
                       <div className="text-muted-foreground text-xs">
@@ -129,6 +147,7 @@ export default function FeedPage() {
                   <Button
                     className="w-full justify-start gap-2"
                     variant="secondary"
+                    onClick={handleHomeClick}
                   >
                     <IconHome className="h-5 w-5" aria-hidden="true" />
                     Feed
@@ -136,6 +155,7 @@ export default function FeedPage() {
                   <Button
                     className="mt-2 w-full justify-start gap-2"
                     variant="ghost"
+                    onClick={() => navigate(profilePath)}
                   >
                     <IconUser className="h-5 w-5" aria-hidden="true" />
                     Profile
@@ -175,7 +195,14 @@ export default function FeedPage() {
 
             <main className="space-y-4">
               <div className="flex justify-center">
-                <Logo size="md" name="Social" />
+                <Button
+                  variant="ghost"
+                  className="h-auto px-2"
+                  onClick={handleHomeClick}
+                  aria-label="Go to feed"
+                >
+                  <Logo size="md" name="Social" />
+                </Button>
               </div>
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
@@ -196,7 +223,10 @@ export default function FeedPage() {
 
               <Tabs
                 value={feedView}
-                onValueChange={(value) => setFeedView(value as FeedView)}
+                onValueChange={(value) => {
+                  setFeedView(value as FeedView);
+                  setPage(0);
+                }}
                 className="border-border bg-card rounded-lg border p-1"
               >
                 <TabsList className="w-full">
@@ -207,7 +237,9 @@ export default function FeedPage() {
 
               <CreatePost
                 pending={createPostMutation.isPending}
-                onCreate={(content) => handleCreatePost(content)}
+                onCreate={(content) => {
+                  void handleCreatePost(content, null);
+                }}
               />
 
               {feedQuery.isPending ? (
@@ -243,10 +275,24 @@ export default function FeedPage() {
                         })
                       }
                       onToggleRetweet={(p) =>
-                        toggleRetweetMutation.mutate({
-                          postId: p.id,
-                          isRetweeted: p.is_retweeted,
-                        })
+                        toggleRetweetMutation.mutate(
+                          {
+                            postId: p.id,
+                            isRetweeted: p.is_retweeted,
+                          },
+                          {
+                            onSuccess: () => {
+                              toast.success(
+                                p.is_retweeted
+                                  ? "Repost removed"
+                                  : "Reposted",
+                              );
+                            },
+                            onError: (e: ApiError) => {
+                              toast.error(e.message);
+                            },
+                          },
+                        )
                       }
                       onUpdate={async (postId, content) => {
                         try {
@@ -371,39 +417,13 @@ export default function FeedPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-base">New post</DialogTitle>
-        </DialogHeader>
-        <div className="border-muted-foreground/30 bg-muted/30 rounded-xl border border-dashed p-6 text-center">
-          <div className="border-muted-foreground/40 bg-background mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-dashed">
-            <IconUpload
-              className="text-muted-foreground h-5 w-5"
-              aria-hidden="true"
-            />
-          </div>
-          <div className="text-sm font-medium">Add photo or video</div>
-          <div className="text-muted-foreground mt-1 text-xs">
-            Upload from your device or choose from Social.
-          </div>
-          <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-            <Button type="button" variant="secondary">
-              Upload from device
-            </Button>
-            <Button type="button" variant="ghost">
-              Choose from Social
-            </Button>
-          </div>
-        </div>
-        <CreatePost
-          pending={createPostMutation.isPending}
-          onCreate={(content) => handleCreatePost(content, true)}
-          showTitle={false}
-          className="ring-0 shadow-none"
-        />
-      </DialogContent>
-    </Dialog>
+      <PostComposerDialog
+        open={composerOpen}
+        onOpenChange={setComposerOpen}
+        pending={createPostMutation.isPending}
+        onCreate={(content, mediaId) => handleCreatePost(content, mediaId)}
+      />
+    </>
   );
 }
 

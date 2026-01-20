@@ -1,14 +1,14 @@
-# Feature: Profile Bio + Follow State + Cover Card
+# Feature: Profile Bio + Follow State + Hover Card
 
 ## Goal
 Add a short "about me" bio (max 100 chars) to user profiles, expose whether the
-viewer follows the user, and render a cover card UI using existing cover URLs.
+viewer follows the user, and render a hover card UI on the feed.
 
 ## Scope
 - Backend: store bio, update it, return it in profile responses, return
   `is_followed_by_viewer`.
 - Frontend: show bio with a "show more" toggle, show follow state/button, and
-  render a cover card using the existing cover URL.
+  render a hover card from feed avatars/usernames.
 
 ## Exact Steps
 
@@ -74,18 +74,22 @@ If running locally:
 
 ### 7) Frontend: UI changes
 1. Profile page (`frontend/src/pages/Profile.tsx`):
-   - Render bio (truncate to 100 chars; show more toggle).
+   - Render bio (initially show ~50 chars; toggle to show full bio).
    - Show follow/unfollow button for non-owner using `is_followed_by_viewer`.
    CodeRabbit
 Clarify bio truncation logic.
 
 The instruction "truncate to 100 chars" is confusing since the bio is already capped at 100 characters at the database level. Please clarify the truncation threshold for the "show more" toggle (e.g., "Initially display first 50 characters; show full bio on 'show more' click").
-2. Cover card:
-   - Add a card component near the profile header or sidebar that renders the
-     cover image from `profile.cover_url` (or `meQuery.data.cover_url` for self).
+2. Hover card (feed):
+   - Use shadcn `hover-card` to show a compact profile card when hovering
+     over avatar/username in `frontend/src/components/PostCard.tsx`.
+   - Content: avatar, @username, bio, followers, following.
+   - Actions: follow/unfollow button for non-owner using
+     `POST /users/{user_id}/follow` and `POST /users/{user_id}/unfollow`.
+   - Add a “View profile” button linking to `/profile/:username`.
 
 ### 8) Verify
 1. Update profile bio, refresh profile page: bio persists and renders.
 2. View another user: follow state reflects correctly.
-3. Cover card renders and falls back cleanly when `cover_url` is null.
-
+3. Hover card appears on feed and shows bio + follow counts.
+4. Follow/unfollow updates state and counts.

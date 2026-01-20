@@ -5,6 +5,7 @@ Revises: 1b2c3d4e5f6a
 Create Date: 2026-01-18 06:47:47.881465
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '3f7f8a5cfc0f'
-down_revision: Union[str, None] = '1b2c3d4e5f6a'
+revision: str = "3f7f8a5cfc0f"
+down_revision: Union[str, None] = "1b2c3d4e5f6a"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -37,9 +38,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("object_key"),
     )
     op.create_index(op.f("ix_media_id"), "media", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_media_object_key"), "media", ["object_key"], unique=False
-    )
+    op.create_index(op.f("ix_media_object_key"), "media", ["object_key"], unique=False)
     op.add_column("posts", sa.Column("media_id", sa.Integer(), nullable=True))
     op.create_foreign_key(
         "fk_posts_media_id", "posts", "media", ["media_id"], ["id"], ondelete="SET NULL"

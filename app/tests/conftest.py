@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
+
 def _default_test_database_url() -> str:
     database_url = os.getenv("DATABASE_URL")
     if database_url:

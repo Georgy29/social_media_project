@@ -36,9 +36,7 @@ class User(Base):
     )
     posts = relationship("Post", back_populates="owner")
     avatar_media = relationship("Media", foreign_keys=[avatar_media_id])
-    profile_cover_media = relationship(
-        "Media", foreign_keys=[profile_cover_media_id]
-    )
+    profile_cover_media = relationship("Media", foreign_keys=[profile_cover_media_id])
 
     followers = relationship(
         "User",

@@ -11,7 +11,7 @@ import {
 import { CreatePost } from "@/components/CreatePost";
 import { Logo } from "@/components/Logo";
 import { PostComposerDialog } from "@/components/PostComposerDialog";
-import { PostCard } from "@/components/PostCard";
+import { PostCard, type PostWithCounts } from "@/components/PostCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,12 +74,6 @@ export default function FeedPage() {
     ? `/profile/${meQuery.data.username}`
     : "/feed";
 
-  const isMutating =
-    createPostMutation.isPending ||
-    updatePostMutation.isPending ||
-    deletePostMutation.isPending ||
-    toggleLikeMutation.isPending ||
-    toggleRetweetMutation.isPending;
   const isRefreshing = feedQuery.isFetching && feedQuery.isPlaceholderData;
 
   const handleHomeClick = useCallback(() => {
@@ -89,6 +83,83 @@ export default function FeedPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [feedQuery]);
+
+  const isPostMutating = useCallback(
+    (postId: number) =>
+      (updatePostMutation.isPending &&
+        updatePostMutation.variables?.postId === postId) ||
+      (deletePostMutation.isPending &&
+        deletePostMutation.variables?.postId === postId) ||
+      (toggleLikeMutation.isPending &&
+        toggleLikeMutation.variables?.postId === postId) ||
+      (toggleRetweetMutation.isPending &&
+        toggleRetweetMutation.variables?.postId === postId),
+    [
+      updatePostMutation.isPending,
+      updatePostMutation.variables?.postId,
+      deletePostMutation.isPending,
+      deletePostMutation.variables?.postId,
+      toggleLikeMutation.isPending,
+      toggleLikeMutation.variables?.postId,
+      toggleRetweetMutation.isPending,
+      toggleRetweetMutation.variables?.postId,
+    ],
+  );
+
+  const handleToggleLike = useCallback(
+    (post: PostWithCounts) => {
+      toggleLikeMutation.mutate({ postId: post.id, isLiked: post.is_liked });
+    },
+    [toggleLikeMutation],
+  );
+
+  const handleToggleRetweet = useCallback(
+    (post: PostWithCounts) => {
+      toggleRetweetMutation.mutate(
+        { postId: post.id, isRetweeted: post.is_retweeted },
+        {
+          onSuccess: () => {
+            toast.success(post.is_retweeted ? "Repost removed" : "Reposted");
+          },
+          onError: (e: ApiError) => {
+            toast.error(e.message);
+          },
+        },
+      );
+    },
+    [toggleRetweetMutation],
+  );
+
+  const handleUpdatePost = useCallback(
+    async (postId: number, content: string) => {
+      try {
+        await updatePostMutation.mutateAsync({
+          postId,
+          payload: { content },
+        });
+        toast.success("Updated");
+      } catch (e) {
+        const error = e as ApiError;
+        toast.error(error.message);
+        throw e;
+      }
+    },
+    [updatePostMutation],
+  );
+
+  const handleDeletePost = useCallback(
+    async (postId: number) => {
+      try {
+        await deletePostMutation.mutateAsync({ postId });
+        toast.success("Deleted");
+      } catch (e) {
+        const error = e as ApiError;
+        toast.error(error.message);
+        throw e;
+      }
+    },
+    [deletePostMutation],
+  );
 
   const handleCreatePost = async (content: string, mediaId: number | null) => {
     const payload = mediaId ? { content, media_id: mediaId } : { content };
@@ -263,55 +334,12 @@ export default function FeedPage() {
                     <PostCard
                       key={post.id}
                       post={post}
-                      pending={isMutating}
+                      pending={isPostMutating(post.id)}
                       isOwner={meQuery.data?.id === post.owner_id}
-                      onToggleLike={(p) =>
-                        toggleLikeMutation.mutate({
-                          postId: p.id,
-                          isLiked: p.is_liked,
-                        })
-                      }
-                      onToggleRetweet={(p) =>
-                        toggleRetweetMutation.mutate(
-                          {
-                            postId: p.id,
-                            isRetweeted: p.is_retweeted,
-                          },
-                          {
-                            onSuccess: () => {
-                              toast.success(
-                                p.is_retweeted ? "Repost removed" : "Reposted",
-                              );
-                            },
-                            onError: (e: ApiError) => {
-                              toast.error(e.message);
-                            },
-                          },
-                        )
-                      }
-                      onUpdate={async (postId, content) => {
-                        try {
-                          await updatePostMutation.mutateAsync({
-                            postId,
-                            payload: { content },
-                          });
-                          toast.success("Updated");
-                        } catch (e) {
-                          const error = e as ApiError;
-                          toast.error(error.message);
-                          throw e;
-                        }
-                      }}
-                      onDelete={async (postId) => {
-                        try {
-                          await deletePostMutation.mutateAsync({ postId });
-                          toast.success("Deleted");
-                        } catch (e) {
-                          const error = e as ApiError;
-                          toast.error(error.message);
-                          throw e;
-                        }
-                      }}
+                      onToggleLike={handleToggleLike}
+                      onToggleRetweet={handleToggleRetweet}
+                      onUpdate={handleUpdatePost}
+                      onDelete={handleDeletePost}
                     />
                   ))}
                 </div>

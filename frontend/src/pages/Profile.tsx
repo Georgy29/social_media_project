@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -11,7 +19,7 @@ import {
 
 import { Logo } from "@/components/Logo";
 import { PostComposerDialog } from "@/components/PostComposerDialog";
-import { PostCard } from "@/components/PostCard";
+import { PostCard, type PostWithCounts } from "@/components/PostCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,12 +106,6 @@ export default function ProfilePage() {
     ? `/profile/${meQuery.data.username}`
     : "/feed";
 
-  const isMutating =
-    createPostMutation.isPending ||
-    updatePostMutation.isPending ||
-    deletePostMutation.isPending ||
-    toggleLikeMutation.isPending ||
-    toggleRetweetMutation.isPending;
   const isTimelineRefreshing =
     timelineQuery.isFetching && timelineQuery.isPlaceholderData;
 
@@ -130,6 +132,85 @@ export default function ProfilePage() {
     navigate("/feed");
   };
 
+  const isPostMutating = useCallback(
+    (postId: number) =>
+      (updatePostMutation.isPending &&
+        updatePostMutation.variables?.postId === postId) ||
+      (deletePostMutation.isPending &&
+        deletePostMutation.variables?.postId === postId) ||
+      (toggleLikeMutation.isPending &&
+        toggleLikeMutation.variables?.postId === postId) ||
+      (toggleRetweetMutation.isPending &&
+        toggleRetweetMutation.variables?.postId === postId),
+    [
+      updatePostMutation.isPending,
+      updatePostMutation.variables?.postId,
+      deletePostMutation.isPending,
+      deletePostMutation.variables?.postId,
+      toggleLikeMutation.isPending,
+      toggleLikeMutation.variables?.postId,
+      toggleRetweetMutation.isPending,
+      toggleRetweetMutation.variables?.postId,
+    ],
+  );
+
+  const handleToggleLike = useCallback(
+    (post: PostWithCounts) => {
+      toggleLikeMutation.mutate({ postId: post.id, isLiked: post.is_liked });
+    },
+    [toggleLikeMutation],
+  );
+
+  const handleToggleRetweet = useCallback(
+    (post: PostWithCounts) => {
+      toggleRetweetMutation.mutate(
+        { postId: post.id, isRetweeted: post.is_retweeted },
+        {
+          onSuccess: () => {
+            toast.success(post.is_retweeted ? "Repost removed" : "Reposted");
+          },
+          onError: (e: ApiError) => {
+            toast.error(e.message);
+          },
+        },
+      );
+    },
+    [toggleRetweetMutation],
+  );
+
+  const handleUpdatePost = useCallback(
+    async (postId: number, content: string) => {
+      try {
+        await updatePostMutation.mutateAsync({
+          postId,
+          payload: { content },
+        });
+        toast.success("Updated");
+      } catch (e) {
+        const error = e as ApiError;
+        toast.error(error.message);
+        throw e;
+      }
+    },
+    [updatePostMutation],
+  );
+
+  const handleDeletePost = useCallback(
+    async (postId: number) => {
+      try {
+        await deletePostMutation.mutateAsync({
+          postId,
+        });
+        toast.success("Deleted");
+      } catch (e) {
+        const error = e as ApiError;
+        toast.error(error.message);
+        throw e;
+      }
+    },
+    [deletePostMutation],
+  );
+
   const handleCreatePost = async (content: string, mediaId: number | null) => {
     const payload = mediaId ? { content, media_id: mediaId } : { content };
     try {
@@ -143,35 +224,61 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAvatarUpload = async (file: File) => {
-    setAvatarBusy(true);
-    try {
-      const uploaded = await uploadMediaFromDevice(file, "avatar");
-      await updateAvatarMutation.mutateAsync({ media_id: uploaded.mediaId });
-      toast.success("Avatar updated");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Avatar upload failed";
-      toast.error(message);
-    } finally {
-      setAvatarBusy(false);
-    }
-  };
+  const handleAvatarUpload = useCallback(
+    async (file: File) => {
+      setAvatarBusy(true);
+      try {
+        const uploaded = await uploadMediaFromDevice(file, "avatar");
+        await updateAvatarMutation.mutateAsync({ media_id: uploaded.mediaId });
+        toast.success("Avatar updated");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Avatar upload failed";
+        toast.error(message);
+      } finally {
+        setAvatarBusy(false);
+      }
+    },
+    [updateAvatarMutation],
+  );
 
-  const handleCoverUpload = async (file: File) => {
-    setCoverBusy(true);
-    try {
-      const uploaded = await uploadMediaFromDevice(file, "profile_cover");
-      await updateCoverMutation.mutateAsync({ media_id: uploaded.mediaId });
-      toast.success("Cover updated");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Cover upload failed";
-      toast.error(message);
-    } finally {
-      setCoverBusy(false);
-    }
-  };
+  const handleCoverUpload = useCallback(
+    async (file: File) => {
+      setCoverBusy(true);
+      try {
+        const uploaded = await uploadMediaFromDevice(file, "profile_cover");
+        await updateCoverMutation.mutateAsync({ media_id: uploaded.mediaId });
+        toast.success("Cover updated");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Cover upload failed";
+        toast.error(message);
+      } finally {
+        setCoverBusy(false);
+      }
+    },
+    [updateCoverMutation],
+  );
+
+  const handleAvatarInputChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      await handleAvatarUpload(file);
+      event.target.value = "";
+    },
+    [handleAvatarUpload],
+  );
+
+  const handleCoverInputChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      await handleCoverUpload(file);
+      event.target.value = "";
+    },
+    [handleCoverUpload],
+  );
 
   return (
     <>
@@ -450,61 +557,12 @@ export default function ProfilePage() {
                               ) : null}
                               <PostCard
                                 post={item.post}
-                                pending={isMutating}
-                                isOwner={
-                                  meQuery.data?.id === item.post.owner_id
-                                }
-                                onToggleLike={(post) =>
-                                  toggleLikeMutation.mutate({
-                                    postId: post.id,
-                                    isLiked: post.is_liked,
-                                  })
-                                }
-                                onToggleRetweet={(post) =>
-                                  toggleRetweetMutation.mutate(
-                                    {
-                                      postId: post.id,
-                                      isRetweeted: post.is_retweeted,
-                                    },
-                                    {
-                                      onSuccess: () => {
-                                        toast.success(
-                                          post.is_retweeted
-                                            ? "Repost removed"
-                                            : "Reposted",
-                                        );
-                                      },
-                                      onError: (e: ApiError) => {
-                                        toast.error(e.message);
-                                      },
-                                    },
-                                  )
-                                }
-                                onUpdate={async (postId, content) => {
-                                  try {
-                                    await updatePostMutation.mutateAsync({
-                                      postId,
-                                      payload: { content },
-                                    });
-                                    toast.success("Updated");
-                                  } catch (e) {
-                                    const error = e as ApiError;
-                                    toast.error(error.message);
-                                    throw e;
-                                  }
-                                }}
-                                onDelete={async (postId) => {
-                                  try {
-                                    await deletePostMutation.mutateAsync({
-                                      postId,
-                                    });
-                                    toast.success("Deleted");
-                                  } catch (e) {
-                                    const error = e as ApiError;
-                                    toast.error(error.message);
-                                    throw e;
-                                  }
-                                }}
+                                pending={isPostMutating(item.post.id)}
+                                isOwner={meQuery.data?.id === item.post.owner_id}
+                                onToggleLike={handleToggleLike}
+                                onToggleRetweet={handleToggleRetweet}
+                                onUpdate={handleUpdatePost}
+                                onDelete={handleDeletePost}
                               />
                             </div>
                           );
@@ -574,24 +632,14 @@ export default function ProfilePage() {
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
-          onChange={async (event) => {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            await handleAvatarUpload(file);
-            event.target.value = "";
-          }}
+          onChange={handleAvatarInputChange}
         />
         <input
           ref={coverInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
-          onChange={async (event) => {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            await handleCoverUpload(file);
-            event.target.value = "";
-          }}
+          onChange={handleCoverInputChange}
         />
 
         <AlertDialogContent>

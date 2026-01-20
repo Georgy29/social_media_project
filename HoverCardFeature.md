@@ -41,6 +41,14 @@ viewer follows the user, and render a cover card UI using existing cover URLs.
    - Compute `is_followed_by_viewer` using the `Follow` table when a viewer is
      present.
    - Include `bio` and `is_followed_by_viewer` in `UserProfile` response.
+   CodeRabbit
+Clarify follow state computation and consider database indexes.
+
+Two recommendations:
+
+Explicit None handling: The instruction should explicitly state that is_followed_by_viewer should be False when current_user_optional is None to avoid any ambiguity.
+
+Index consideration: Querying the Follow table on every profile view could impact performance. Ensure appropriate indexes exist on the Follow table (e.g., composite index on follower_id and followed_id) for efficient lookups.
 3. Add profile update endpoint:
    - `PUT /users/me/profile` that accepts `UserProfileUpdate`.
    - Trim whitespace, enforce max length 100, allow null to clear.
@@ -68,6 +76,10 @@ If running locally:
 1. Profile page (`frontend/src/pages/Profile.tsx`):
    - Render bio (truncate to 100 chars; show more toggle).
    - Show follow/unfollow button for non-owner using `is_followed_by_viewer`.
+   CodeRabbit
+Clarify bio truncation logic.
+
+The instruction "truncate to 100 chars" is confusing since the bio is already capped at 100 characters at the database level. Please clarify the truncation threshold for the "show more" toggle (e.g., "Initially display first 50 characters; show full bio on 'show more' click").
 2. Cover card:
    - Add a card component near the profile header or sidebar that renders the
      cover image from `profile.cover_url` (or `meQuery.data.cover_url` for self).

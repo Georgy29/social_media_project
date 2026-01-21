@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { CreatePost } from "@/components/CreatePost";
+import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { PostComposerDialog } from "@/components/PostComposerDialog";
 import { PostCard, type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
@@ -21,7 +22,6 @@ import {
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { FeedRightRail } from "@/components/sidebar/FeedRightRail";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { type ApiError } from "@/api/client";
@@ -324,28 +324,5 @@ export default function FeedPage() {
         onCreate={(content, mediaId) => handleCreatePost(content, mediaId)}
       />
     </>
-  );
-}
-
-function FeedSkeleton() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <Card key={index} className="animate-pulse">
-          <CardHeader className="space-y-2">
-            <div className="bg-muted h-4 w-32 rounded" />
-            <div className="bg-muted h-3 w-24 rounded" />
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="bg-muted h-3 w-full rounded" />
-            <div className="bg-muted h-3 w-5/6 rounded" />
-            <div className="mt-4 flex gap-2">
-              <div className="bg-muted h-8 w-20 rounded" />
-              <div className="bg-muted h-8 w-20 rounded" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
   );
 }

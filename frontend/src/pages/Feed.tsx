@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { CreatePost } from "@/components/CreatePost";
-import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { PostComposerDialog } from "@/components/PostComposerDialog";
 import { PostCard, type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
@@ -16,6 +15,7 @@ import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { FeedRightRail } from "@/components/sidebar/FeedRightRail";
 import { getSidebarUser } from "@/components/sidebar/sidebar-user";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { type ApiError } from "@/api/client";
@@ -217,7 +217,9 @@ export default function FeedPage() {
           />
 
           {feedQuery.isPending ? (
-            <FeedSkeleton />
+            <div className="flex justify-center py-10">
+              <Spinner size="lg" />
+            </div>
           ) : feedQuery.isError ? (
             <div className="border-destructive/30 bg-destructive/10 rounded-md border p-4 text-center">
               <div className="text-destructive font-medium">

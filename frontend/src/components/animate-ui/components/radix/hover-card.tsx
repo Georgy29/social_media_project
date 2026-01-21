@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import {
   HoverCard as HoverCardPrimitive,
   HoverCardContent as HoverCardContentPrimitive,

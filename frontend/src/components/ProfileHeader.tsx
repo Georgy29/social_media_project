@@ -50,7 +50,7 @@ export function ProfileHeader({
             <Button
               size="default"
               variant="outline"
-              className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+              className="bg-background/80 backdrop-blur-sm"
               onClick={onEditProfile}
             >
               Edit profile

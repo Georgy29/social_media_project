@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserTimelineQuery } from "@/api/queries";
 
@@ -86,7 +87,9 @@ export function ProfileTimelineSection({
             Select a profile to view their posts.
           </div>
         ) : timelineQuery.isPending ? (
-          <TimelineSkeleton />
+          <div className="flex justify-center py-10">
+            <Spinner size="lg" />
+          </div>
         ) : timelineQuery.isError ? (
           <div className="text-muted-foreground text-sm">
             {timelineQuery.error.message}
@@ -156,22 +159,5 @@ export function ProfileTimelineSection({
         </Button>
       </CardFooter>
     </Card>
-  );
-}
-
-function TimelineSkeleton() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="rounded-xl border border-border p-4">
-          <div className="space-y-2">
-            <div className="bg-muted h-3 w-28 rounded" />
-            <div className="bg-muted h-3 w-full rounded" />
-            <div className="bg-muted h-3 w-5/6 rounded" />
-            <div className="bg-muted mt-4 h-8 w-24 rounded" />
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }

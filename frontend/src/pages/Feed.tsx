@@ -8,6 +8,7 @@ import { PostComposerDialog } from "@/components/PostComposerDialog";
 import { PostCard, type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -198,22 +199,22 @@ export default function FeedPage() {
           rightRail={<FeedRightRail />}
         >
           <BrandHeader onClick={handleHomeClick} />
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <div className="text-xl font-semibold">Feed</div>
-              <div className="text-muted-foreground text-sm">
-                {meQuery.data
-                  ? `Hello @${meQuery.data.username} feel free to try out my social media MVP`
-                  : null}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 md:hidden">
-              <Button onClick={() => setComposerOpen(true)}>Post</Button>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">Logout</Button>
-              </AlertDialogTrigger>
-            </div>
-          </div>
+          <PageHeader
+            title="Feed"
+            subtitle={
+              meQuery.data
+                ? `Hello @${meQuery.data.username} feel free to try out my social media MVP`
+                : null
+            }
+            actions={
+              <>
+                <Button onClick={() => setComposerOpen(true)}>Post</Button>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline">Logout</Button>
+                </AlertDialogTrigger>
+              </>
+            }
+          />
 
           <Tabs
             value={feedView}

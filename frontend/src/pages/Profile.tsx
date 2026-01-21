@@ -9,6 +9,7 @@ import { ProfileHeader } from "@/components/ProfileHeader";
 import { type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { ProfileTimelineSection } from "@/components/profile/ProfileTimelineSection";
 import {
@@ -220,8 +221,9 @@ export default function ProfilePage() {
           rightRail={<ProfileRightRail />}
         >
           <BrandHeader onClick={handleGoHome} />
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <PageHeader
+            title="Profile"
+            leading={
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -230,15 +232,16 @@ export default function ProfilePage() {
               >
                 <IconArrowLeft className="h-4 w-4" aria-hidden="true" />
               </Button>
-              <div className="text-xl font-semibold">Profile</div>
-            </div>
-            <div className="flex items-center gap-2 md:hidden">
-              <Button onClick={() => setComposerOpen(true)}>Post</Button>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">Logout</Button>
-              </AlertDialogTrigger>
-            </div>
-          </div>
+            }
+            actions={
+              <>
+                <Button onClick={() => setComposerOpen(true)}>Post</Button>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline">Logout</Button>
+                </AlertDialogTrigger>
+              </>
+            }
+          />
 
           {!username ? (
             <Card>

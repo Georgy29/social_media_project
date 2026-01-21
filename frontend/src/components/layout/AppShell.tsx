@@ -19,9 +19,7 @@ export function AppShell({
     <div className="bg-background text-foreground min-h-screen w-full">
       <div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_240px]">
         <aside className="md:sticky md:top-4 md:h-[calc(100vh-2rem)]">
-          <div className="hidden md:flex h-full flex-col gap-4">
-            {sidebar}
-          </div>
+          <div className="hidden md:flex h-full flex-col gap-4">{sidebar}</div>
         </aside>
 
         <main className={cn("space-y-4", mainClassName)}>{children}</main>

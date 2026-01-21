@@ -106,7 +106,11 @@ type ProfileStatsRowProps = {
   following: number;
 };
 
-function ProfileStatsRow({ posts, followers, following }: ProfileStatsRowProps) {
+function ProfileStatsRow({
+  posts,
+  followers,
+  following,
+}: ProfileStatsRowProps) {
   return (
     <div className="flex flex-wrap items-center gap-6">
       <ProfileStatItem label="Posts" value={posts} />

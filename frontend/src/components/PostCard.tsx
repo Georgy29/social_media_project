@@ -90,9 +90,9 @@ export function PostCard({
   });
   const [likeCountKey, setLikeCountKey] = useState(0);
   const [retweetCountKey, setRetweetCountKey] = useState(0);
-  const [likeCountDirection, setLikeCountDirection] = useState<
-    "up" | "down"
-  >("up");
+  const [likeCountDirection, setLikeCountDirection] = useState<"up" | "down">(
+    "up",
+  );
   const [retweetCountDirection, setRetweetCountDirection] = useState<
     "up" | "down"
   >("up");
@@ -107,7 +107,10 @@ export function PostCard({
 
   useEffect(() => {
     setLikeState({ liked: post.is_liked, count: post.likes_count });
-    setRetweetState({ retweeted: post.is_retweeted, count: post.retweets_count });
+    setRetweetState({
+      retweeted: post.is_retweeted,
+      count: post.retweets_count,
+    });
   }, [
     post.id,
     post.is_liked,

@@ -12,9 +12,7 @@ import { HeaderActions } from "@/components/layout/HeaderActions";
 import { LogoutDialogContent } from "@/components/layout/LogoutDialogContent";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  AlertDialog,
-} from "@/components/animate-ui/components/radix/alert-dialog";
+import { AlertDialog } from "@/components/animate-ui/components/radix/alert-dialog";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { FeedRightRail } from "@/components/sidebar/FeedRightRail";
 import { getSidebarUser } from "@/components/sidebar/sidebar-user";
@@ -274,8 +272,7 @@ export default function FeedPage() {
             <Button
               variant="outline"
               disabled={
-                feedQuery.isFetching ||
-                (feedQuery.data?.length ?? 0) < limit
+                feedQuery.isFetching || (feedQuery.data?.length ?? 0) < limit
               }
               onClick={() => setPage((p) => p + 1)}
             >

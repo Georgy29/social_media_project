@@ -1,9 +1,12 @@
 import type { SidebarUser } from "@/components/sidebar/AppSidebar";
 
-type MeUser = {
-  username?: string | null;
-  avatar_url?: string | null;
-} | null | undefined;
+type MeUser =
+  | {
+      username?: string | null;
+      avatar_url?: string | null;
+    }
+  | null
+  | undefined;
 
 type SidebarFallback = {
   name: string;

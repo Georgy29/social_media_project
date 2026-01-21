@@ -15,9 +15,7 @@ import { LogoutButton } from "@/components/layout/LogoutButton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { ProfileTimelineSection } from "@/components/profile/ProfileTimelineSection";
-import {
-  AlertDialog,
-} from "@/components/animate-ui/components/radix/alert-dialog";
+import { AlertDialog } from "@/components/animate-ui/components/radix/alert-dialog";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { ProfileRightRail } from "@/components/sidebar/ProfileRightRail";
 import { getSidebarUser } from "@/components/sidebar/sidebar-user";

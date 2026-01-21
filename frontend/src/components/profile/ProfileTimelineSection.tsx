@@ -136,9 +136,7 @@ export function ProfileTimelineSection({
           variant="outline"
           size="sm"
           disabled={timelinePage === 0 || timelineQuery.isFetching}
-          onClick={() =>
-            setTimelinePage((value) => Math.max(0, value - 1))
-          }
+          onClick={() => setTimelinePage((value) => Math.max(0, value - 1))}
         >
           Previous
         </Button>

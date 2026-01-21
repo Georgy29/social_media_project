@@ -126,8 +126,7 @@ export function ProfileEditDialog({
   };
 
   const initials = (profile.username ?? "?").slice(0, 2).toUpperCase();
-  const isSaving =
-    updateProfileMutation.isPending || avatarBusy || coverBusy;
+  const isSaving = updateProfileMutation.isPending || avatarBusy || coverBusy;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,11 +141,7 @@ export function ProfileEditDialog({
             </DialogClose>
             <DialogTitle className="text-base">Edit profile</DialogTitle>
           </div>
-          <Button
-            size="lg"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
+          <Button size="lg" onClick={handleSave} disabled={isSaving}>
             {isSaving ? "Saving..." : "Save"}
           </Button>
         </DialogHeader>

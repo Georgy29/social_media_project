@@ -210,7 +210,7 @@ export default function ProfilePage() {
             leading={
               <Button
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 onClick={handleGoHome}
                 aria-label="Back to feed"
               >

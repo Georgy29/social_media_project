@@ -184,6 +184,7 @@ export default function FeedPage() {
             />
           }
           rightRail={<FeedRightRail />}
+          mainClassName="space-y-3"
         >
           <BrandHeader onClick={handleHomeClick} />
           <PageHeader
@@ -202,13 +203,13 @@ export default function FeedPage() {
               setFeedView(value as FeedView);
               setPage(0);
             }}
-            className="border-border bg-card rounded-lg border p-1"
+            className="pb-1"
           >
-            <TabsList className="w-full h-auto">
-              <TabsTrigger value="public" className="h-10 text-base px-4">
+            <TabsList variant="line" className="w-full justify-start gap-2">
+              <TabsTrigger value="public" className="h-10 px-4 text-sm">
                 Public feed
               </TabsTrigger>
-              <TabsTrigger value="subscriptions" className="h-10 text-base px-4">
+              <TabsTrigger value="subscriptions" className="h-10 px-4 text-sm">
                 Subscriptions
               </TabsTrigger>
             </TabsList>
@@ -216,9 +217,7 @@ export default function FeedPage() {
 
           <CreatePost
             pending={createPostMutation.isPending}
-            onCreate={(content) => {
-              void handleCreatePost(content, null);
-            }}
+            onCreate={(content, mediaId) => handleCreatePost(content, mediaId)}
           />
 
           {feedQuery.isPending ? (

@@ -65,16 +65,16 @@ export function ProfileTimelineSection({
           onValueChange={(value) =>
             setTimelineFilter(value as "all" | "posts" | "retweets")
           }
-          className="border-border bg-card rounded-lg border p-1"
+          className="pb-1"
         >
-          <TabsList className="w-full h-auto">
-            <TabsTrigger value="all" className="h-10 text-base px-4">
+          <TabsList variant="line" className="w-full justify-start gap-2">
+            <TabsTrigger value="all" className="h-10 px-4 text-sm">
               All
             </TabsTrigger>
-            <TabsTrigger value="posts" className="h-10 text-base px-4">
+            <TabsTrigger value="posts" className="h-10 px-4 text-sm">
               Posts
             </TabsTrigger>
-            <TabsTrigger value="retweets" className="h-10 text-base px-4">
+            <TabsTrigger value="retweets" className="h-10 px-4 text-sm">
               Reposts
             </TabsTrigger>
           </TabsList>

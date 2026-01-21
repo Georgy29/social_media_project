@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Profile */
+        put: operations["update_profile_users_me_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/token": {
         parameters: {
             query?: never;
@@ -498,6 +515,8 @@ export interface components {
             avatar_url?: string | null;
             /** Cover Url */
             cover_url?: string | null;
+            /** Bio */
+            bio?: string | null;
         };
         /** UserCreate */
         UserCreate: {
@@ -525,10 +544,22 @@ export interface components {
             following_count: number;
             /** Posts Count */
             posts_count: number;
+            /**
+             * Is Followed By Viewer
+             * @default false
+             */
+            is_followed_by_viewer: boolean;
             /** Avatar Url */
             avatar_url?: string | null;
             /** Cover Url */
             cover_url?: string | null;
+            /** Bio */
+            bio?: string | null;
+        };
+        /** UserProfileUpdate */
+        UserProfileUpdate: {
+            /** Bio */
+            bio?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -767,6 +798,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CoverUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_profile_users_me_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserProfileUpdate"];
             };
         };
         responses: {

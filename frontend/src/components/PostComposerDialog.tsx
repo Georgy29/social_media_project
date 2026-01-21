@@ -49,13 +49,15 @@ export function PostComposerDialog({
         setMediaId(null);
         setMediaName(null);
         onOpenChange(false);
+        return true;
       }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to create post";
       toast.error(message);
-      return;
+      return false;
     }
+    return false;
   };
 
   return (
@@ -120,10 +122,9 @@ export function PostComposerDialog({
         </div>
         <CreatePost
           pending={isPending}
-          onCreate={(content) => {
-            void handleCreate(content);
-          }}
+          onCreate={(content) => handleCreate(content)}
           showTitle={false}
+          showMediaButton={false}
           className="ring-0 shadow-none"
         />
       </DialogContent>

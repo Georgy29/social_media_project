@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   IconBookmark,
   IconBookmarkFilled,
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import type { components } from "@/api/types";
 
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -73,10 +73,18 @@ export function PostCard({
   const [error, setError] = useState<string | null>(null);
   const [likeBurst, setLikeBurst] = useState(0);
   const [retweetBurst, setRetweetBurst] = useState(0);
+  const [retweetMenuOpen, setRetweetMenuOpen] = useState(false);
+  const retweetMenuOpenedAt = useRef(0);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase();
+  const avatarUrl = post.owner_avatar_url ?? null;
+  const mediaAlt = (() => {
+    const snippet = post.content.trim().replace(/\s+/g, " ").slice(0, 80);
+    if (snippet) return `Post image: ${snippet}`;
+    return `Post image by @${post.owner_username}`;
+  })();
 
   const handleToggleLike = () => {
     setLikeBurst((value) => value + 1);
@@ -86,6 +94,13 @@ export function PostCard({
   const handleToggleRetweet = () => {
     setRetweetBurst((value) => value + 1);
     onToggleRetweet(post);
+  };
+
+  const handleRetweetMenuOpenChange = (open: boolean) => {
+    setRetweetMenuOpen(open);
+    if (open) {
+      retweetMenuOpenedAt.current = Date.now();
+    }
   };
 
   const handleToggleBookmark = async () => {
@@ -110,6 +125,9 @@ export function PostCard({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Avatar className="size-9">
+              {avatarUrl ? (
+                <AvatarImage src={avatarUrl} alt={post.owner_username} />
+              ) : null}
               <AvatarFallback className="text-xs font-semibold">
                 {avatarLabel}
               </AvatarFallback>
@@ -165,6 +183,16 @@ export function PostCard({
         ) : (
           <div className="whitespace-pre-wrap">{post.content}</div>
         )}
+        {post.media_url ? (
+          <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20">
+            <img
+              src={post.media_url}
+              alt={mediaAlt}
+              loading="lazy"
+              className="h-auto w-full max-h-105 object-contain"
+            />
+          </div>
+        ) : null}
         {error ? <div className="text-destructive text-sm">{error}</div> : null}
       </CardContent>
       <CardFooter className="flex items-center gap-2 px-3 py-2">
@@ -197,35 +225,56 @@ export function PostCard({
               {post.likes_count}
             </span>
           </Button>
-          <Button
-            size="xs"
-            disabled={pending}
-            variant="outline"
-            aria-pressed={post.is_retweeted}
-            aria-label={post.is_retweeted ? "Undo repost" : "Repost"}
-            className="gap-2"
-            onClick={handleToggleRetweet}
+          <DropdownMenu
+            open={retweetMenuOpen}
+            onOpenChange={handleRetweetMenuOpenChange}
           >
-            <span
-              key={retweetBurst}
-              className={cn(
-                "flex items-center",
-                retweetBurst > 0
-                  ? "motion-safe:animate-[retweet-pop_220ms_ease-out_1]"
-                  : "",
-              )}
-            >
-              <IconRepeat
-                className={cn(
-                  "text-muted-foreground transition-colors duration-150",
-                  post.is_retweeted ? "text-emerald-600" : "",
-                )}
-              />
-            </span>
-            <span className="text-xs font-medium tabular-nums">
-              {post.retweets_count}
-            </span>
-          </Button>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="xs"
+                disabled={pending}
+                variant="outline"
+                aria-pressed={post.is_retweeted}
+                aria-label={post.is_retweeted ? "Repost menu" : "Repost menu"}
+                className="gap-2"
+              >
+                <span
+                  key={retweetBurst}
+                  className={cn(
+                    "flex items-center",
+                    retweetBurst > 0
+                      ? "motion-safe:animate-[retweet-pop_220ms_ease-out_1]"
+                      : "",
+                  )}
+                >
+                  <IconRepeat
+                    className={cn(
+                      "text-muted-foreground transition-colors duration-150",
+                      post.is_retweeted ? "text-emerald-600" : "",
+                    )}
+                  />
+                </span>
+                <span className="text-xs font-medium tabular-nums">
+                  {post.retweets_count}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" side="top" sideOffset={-24}>
+              <DropdownMenuItem
+                disabled={pending}
+                onSelect={(event) => {
+                  if (pending) return;
+                  if (Date.now() - retweetMenuOpenedAt.current < 200) {
+                    event.preventDefault();
+                    return;
+                  }
+                  handleToggleRetweet();
+                }}
+              >
+                {post.is_retweeted ? "Undo repost" : "Repost"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             size="xs"
             disabled={pending || bookmarkBusy}

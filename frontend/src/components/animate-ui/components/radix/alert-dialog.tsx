@@ -116,8 +116,6 @@ function AlertDialogDescription({
   );
 }
 
-type AlertDialogActionProps = AlertDialogActionPrimitiveProps;
-
 function AlertDialogAction({
   className,
   ...props
@@ -129,8 +127,6 @@ function AlertDialogAction({
     />
   );
 }
-
-type AlertDialogCancelProps = AlertDialogCancelPrimitiveProps;
 
 function AlertDialogCancel({
   className,

@@ -8,6 +8,7 @@ import {
 
 import FeedPage from "@/pages/Feed";
 import LoginPage from "@/pages/Login";
+import ProfilePage from "@/pages/Profile";
 import RegisterPage from "@/pages/Register";
 import { getToken, type ApiError } from "@/api/client";
 import { useMeQuery } from "@/api/queries";
@@ -93,6 +94,14 @@ export default function App() {
           element={
             <RequireAuth>
               <FeedPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/profile/:username"
+          element={
+            <RequireAuth>
+              <ProfilePage />
             </RequireAuth>
           }
         />

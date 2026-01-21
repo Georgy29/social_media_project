@@ -30,6 +30,10 @@ Open: `http://localhost:5173`
   - `POST /users/` (register)
   - `POST /token` (login, OAuth2PasswordRequestForm)
   - `GET /users/me` (verify session)
+- Profile
+  - `GET /users/{username}` (public profile)
+  - `PUT /users/me/avatar` (set/clear avatar via `media_id`)
+  - `PUT /users/me/cover` (set/clear cover via `media_id`)
 - Feed
   - `GET /posts/with_counts/?skip=0&limit=10`
 - Posts
@@ -39,6 +43,9 @@ Open: `http://localhost:5173`
 - Reactions
   - `POST /posts/{post_id}/like` / `POST /posts/{post_id}/unlike`
   - `POST /posts/{post_id}/retweet` / `POST /posts/{post_id}/unretweet`
+- Media (S3 presign flow)
+  - `POST /media/presign` (auth) → `{ media_id, upload_url, public_url }`
+  - `POST /media/{media_id}/complete` (auth) → marks media as ready
 
 ## Next wiring targets (UI exists / in progress)
 These are the next backend contracts to add so the UI can be fully “real”:
@@ -51,6 +58,7 @@ These are the next backend contracts to add so the UI can be fully “real”:
   - `POST /media/presign` (auth)
   - Posts accept optional `media_id` and feed includes `media_url`
   - `PUT /users/me/avatar` (recommend: `media_id`-based)
+  - `PUT /users/me/cover` (recommend: `media_id`-based)
 
 ## OpenAPI -> TypeScript types
 Generated file:
@@ -90,3 +98,6 @@ Notes:
 ## UI conventions
 - Prefer shadcn/ui primitives (`Button`, `Card`, `Field`, etc.) and Tailwind utilities.
 - Keep styling token-driven via `frontend/src/index.css` (CSS variables) instead of hard-coded colors.
+
+## Recreate guide
+For a full “from-scratch” setup walkthrough, see `FRONTEND_RECREATE.md`.

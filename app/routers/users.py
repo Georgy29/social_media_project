@@ -39,11 +39,16 @@ def read_me(current_user: models.User = Depends(auth.get_current_user)):
         created_at=current_user.created_at,
         avatar_url=avatar_url,
         cover_url=cover_url,
+        bio=current_user.bio,
     )
 
 
 @router.get("/{username}", response_model=schemas.UserProfile)
-def get_user_profile(username: str, db: db_dependency):
+def get_user_profile(
+    username: str,
+    db: db_dependency,
+    current_user: models.User | None = Depends(auth.get_current_user_optional),
+):
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
         raise_not_found_exception("User not found")
@@ -68,6 +73,18 @@ def get_user_profile(username: str, db: db_dependency):
         .scalar()
     )
 
+    is_followed_by_viewer = False
+    if current_user and current_user.id != user.id:
+        is_followed_by_viewer = (
+            db.query(models.Follow)
+            .filter(
+                models.Follow.c.follower_id == current_user.id,
+                models.Follow.c.followee_id == user.id,
+            )
+            .first()
+            is not None
+        )
+
     return schemas.UserProfile(
         id=user.id,
         username=user.username,
@@ -75,10 +92,12 @@ def get_user_profile(username: str, db: db_dependency):
         followers_count=followers_count or 0,
         following_count=following_count or 0,
         posts_count=posts_count or 0,
+        is_followed_by_viewer=is_followed_by_viewer,
         avatar_url=user.avatar_media.public_url if user.avatar_media else None,
         cover_url=user.profile_cover_media.public_url
         if user.profile_cover_media
         else None,
+        bio=user.bio,
     )
 
 
@@ -86,6 +105,7 @@ def get_user_profile(username: str, db: db_dependency):
 def get_user_timeline(
     username: str,
     db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
     skip: int = 0,
     limit: int = 10,
 ):
@@ -93,7 +113,7 @@ def get_user_timeline(
     if not user:
         raise_not_found_exception("User not found")
 
-    return fetch_user_timeline(db, user.id, skip, limit)
+    return fetch_user_timeline(db, user.id, current_user.id, skip, limit)
 
 
 # User Registration Endpoint
@@ -118,6 +138,7 @@ def create_user(user: schemas.UserCreate, db: db_dependency):
         created_at=new_user.created_at,
         avatar_url=None,
         cover_url=None,
+        bio=None,
     )
 
 
@@ -182,6 +203,7 @@ def update_avatar(
             created_at=current_user.created_at,
             avatar_url=None,
             cover_url=cover_url,
+            bio=current_user.bio,
         )
 
     media = db.query(models.Media).filter(models.Media.id == payload.media_id).first()
@@ -208,6 +230,7 @@ def update_avatar(
         cover_url=current_user.profile_cover_media.public_url
         if current_user.profile_cover_media
         else None,
+        bio=current_user.bio,
     )
 
 
@@ -232,6 +255,7 @@ def update_cover(
             created_at=current_user.created_at,
             avatar_url=avatar_url,
             cover_url=None,
+            bio=current_user.bio,
         )
 
     media = db.query(models.Media).filter(models.Media.id == payload.media_id).first()
@@ -258,4 +282,38 @@ def update_cover(
         if current_user.avatar_media
         else None,
         cover_url=media.public_url,
+        bio=current_user.bio,
+    )
+
+
+@router.put("/me/profile", response_model=schemas.User)
+def update_profile(
+    payload: schemas.UserProfileUpdate,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    if payload.bio is None:
+        current_user.bio = None
+    else:
+        trimmed = payload.bio.strip()
+        if len(trimmed) > 100:
+            raise_bad_request_exception("Bio must be 100 characters or less")
+        current_user.bio = trimmed if trimmed else None
+
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    return schemas.User(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        created_at=current_user.created_at,
+        avatar_url=current_user.avatar_media.public_url
+        if current_user.avatar_media
+        else None,
+        cover_url=current_user.profile_cover_media.public_url
+        if current_user.profile_cover_media
+        else None,
+        bio=current_user.bio,
     )

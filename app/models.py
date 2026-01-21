@@ -27,6 +27,7 @@ class User(Base):
     profile_cover_media_id = Column(
         Integer, ForeignKey("media.id", ondelete="SET NULL")
     )
+    bio = Column(String(100), nullable=True)
 
     media_items = relationship(
         "Media",

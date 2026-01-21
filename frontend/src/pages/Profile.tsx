@@ -9,18 +9,12 @@ import { ProfileHeader } from "@/components/ProfileHeader";
 import { type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
+import { LogoutDialogContent } from "@/components/layout/LogoutDialogContent";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { ProfileTimelineSection } from "@/components/profile/ProfileTimelineSection";
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/animate-ui/components/radix/alert-dialog";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
@@ -289,18 +283,7 @@ export default function ProfilePage() {
           />
         </AppShell>
 
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Log out?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You will need to sign in again to continue.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout}>Logout</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <LogoutDialogContent onConfirm={handleLogout} />
       </AlertDialog>
       <PostComposerDialog
         open={composerOpen}

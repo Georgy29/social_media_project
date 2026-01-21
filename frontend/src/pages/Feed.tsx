@@ -8,6 +8,7 @@ import { PostComposerDialog } from "@/components/PostComposerDialog";
 import { PostCard, type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
+import { HeaderActions } from "@/components/layout/HeaderActions";
 import { LogoutDialogContent } from "@/components/layout/LogoutDialogContent";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -200,14 +201,7 @@ export default function FeedPage() {
                 ? `Hello @${meQuery.data.username} feel free to try out my social media MVP`
                 : null
             }
-            actions={
-              <>
-                <Button onClick={() => setComposerOpen(true)}>Post</Button>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline">Logout</Button>
-                </AlertDialogTrigger>
-              </>
-            }
+            actions={<HeaderActions onCompose={() => setComposerOpen(true)} />}
           />
 
           <Tabs

@@ -20,6 +20,7 @@ import {
 } from "@/components/animate-ui/components/radix/alert-dialog";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { ProfileRightRail } from "@/components/sidebar/ProfileRightRail";
+import { getSidebarUser } from "@/components/sidebar/sidebar-user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -67,18 +68,12 @@ export default function ProfilePage() {
   const profilePath = meQuery.data?.username
     ? `/profile/${meQuery.data.username}`
     : "/feed";
-  const sidebarName = meQuery.data?.username ?? "You";
-  const sidebarHandle = meQuery.data?.username ?? "you";
-  const sidebarFallback = meQuery.data?.username
-    ? meQuery.data.username.slice(0, 2).toUpperCase()
-    : "ME";
-  const sidebarUser = {
-    name: sidebarName,
-    handle: sidebarHandle,
-    avatarUrl: meQuery.data?.avatar_url ?? null,
-    avatarFallback: sidebarFallback,
-    avatarAlt: meQuery.data?.username ?? "Your avatar",
-  };
+  const sidebarUser = getSidebarUser(meQuery.data, {
+    name: "You",
+    handle: "you",
+    avatarAlt: "Your avatar",
+    avatarFallback: "ME",
+  });
 
   const handleLogout = () => {
     logout();

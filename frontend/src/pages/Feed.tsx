@@ -17,6 +17,7 @@ import {
 } from "@/components/animate-ui/components/radix/alert-dialog";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { FeedRightRail } from "@/components/sidebar/FeedRightRail";
+import { getSidebarUser } from "@/components/sidebar/sidebar-user";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -55,14 +56,11 @@ export default function FeedPage() {
   const toggleRetweetMutation = useToggleRetweetMutation();
   const [composerOpen, setComposerOpen] = useState(false);
   const username = meQuery.data?.username ?? "guest";
-  const initials = username.slice(0, 2).toUpperCase();
-  const sidebarUser = {
+  const sidebarUser = getSidebarUser(meQuery.data, {
     name: username,
     handle: username,
-    avatarUrl: meQuery.data?.avatar_url ?? null,
-    avatarFallback: initials,
     avatarAlt: username,
-  };
+  });
   const profilePath = meQuery.data?.username
     ? `/profile/${meQuery.data.username}`
     : "/feed";

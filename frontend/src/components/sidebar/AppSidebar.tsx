@@ -9,7 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
-type SidebarUser = {
+export type SidebarUser = {
   name: string;
   handle: string;
   avatarUrl?: string | null;

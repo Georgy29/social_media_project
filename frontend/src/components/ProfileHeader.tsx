@@ -47,7 +47,12 @@ export function ProfileHeader({
         )}
         {isOwner ? (
           <div className="absolute right-3 top-3">
-            <Button size="default" variant="secondary" onClick={onEditProfile}>
+            <Button
+              size="default"
+              variant="outline"
+              className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+              onClick={onEditProfile}
+            >
               Edit profile
             </Button>
           </div>

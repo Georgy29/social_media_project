@@ -9,7 +9,6 @@ import { ProfileHeader } from "@/components/ProfileHeader";
 import { type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
-import { HeaderActions } from "@/components/layout/HeaderActions";
 import { LogoutDialogContent } from "@/components/layout/LogoutDialogContent";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -215,7 +214,6 @@ export default function ProfilePage() {
                 <IconArrowLeft className="h-4 w-4" aria-hidden="true" />
               </Button>
             }
-            actions={<HeaderActions onCompose={() => setComposerOpen(true)} />}
           />
 
           {!username ? (

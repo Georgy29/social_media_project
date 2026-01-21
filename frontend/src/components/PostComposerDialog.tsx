@@ -75,9 +75,9 @@ export function PostComposerDialog({
           </div>
           <div className="text-sm font-medium">Add image to your post</div>
           <div className="text-muted-foreground mt-1 text-xs">
-            Upload from your device or choose from Social.
+            Upload from your device.
           </div>
-          <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+          <div className="mt-4 flex items-center justify-center">
             <Button
               type="button"
               variant="secondary"
@@ -85,9 +85,6 @@ export function PostComposerDialog({
               onClick={() => fileInputRef.current?.click()}
             >
               Upload from device
-            </Button>
-            <Button type="button" variant="ghost">
-              Choose from Social
             </Button>
           </div>
           <input

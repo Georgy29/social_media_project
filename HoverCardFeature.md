@@ -7,8 +7,8 @@ viewer follows the user, and render a hover card UI on the feed.
 ## Scope
 - Backend: store bio, update it, return it in profile responses, return
   `is_followed_by_viewer`.
-- Frontend: show bio with a "show more" toggle, show follow state/button, and
-  render a hover card from feed avatars/usernames.
+- Frontend: show bio, show follow state/button, and render a hover card from
+  feed avatars/usernames.
 
 ## Exact Steps
 
@@ -74,12 +74,8 @@ If running locally:
 
 ### 7) Frontend: UI changes
 1. Profile page (`frontend/src/pages/Profile.tsx`):
-   - Render bio (initially show ~50 chars; toggle to show full bio).
+   - Render bio (always visible; max 100 chars).
    - Show follow/unfollow button for non-owner using `is_followed_by_viewer`.
-   CodeRabbit
-Clarify bio truncation logic.
-
-The instruction "truncate to 100 chars" is confusing since the bio is already capped at 100 characters at the database level. Please clarify the truncation threshold for the "show more" toggle (e.g., "Initially display first 50 characters; show full bio on 'show more' click").
 2. Hover card (feed):
    - Use shadcn `hover-card` to show a compact profile card when hovering
      over avatar/username in `frontend/src/components/PostCard.tsx`.
@@ -93,3 +89,19 @@ The instruction "truncate to 100 chars" is confusing since the bio is already ca
 2. View another user: follow state reflects correctly.
 3. Hover card appears on feed and shows bio + follow counts.
 4. Follow/unfollow updates state and counts.
+
+### 9) Frontend: Profile UX polish (no backend changes)
+1. Profile header layout:
+   - Move bio directly under `@username` (always visible; max 100 chars).
+   - Replace the 3 big stat cards with a compact row: `Posts`, `Followers`, `Following` (X-like sizing).
+2. Edit profile (owner only):
+   - Replace separate buttons (avatar/cover/bio) with a single `Edit profile` button.
+   - Open a dialog with 3 actions:
+     - Change avatar: upload flow + `PUT /users/me/avatar`
+     - Change cover: upload flow + `PUT /users/me/cover`
+     - Edit bio: textarea (max 100) + `PUT /users/me/profile`
+3. Follow button (non-owner only):
+   - Show `Follow` / `Following` using `is_followed_by_viewer` and existing follow/unfollow endpoints.
+
+### 10) Frontend: Sidebar suggestions (no backend changes)
+Moved to `AvatarGroupFeature.md` so the sidebar and profile header can share the same suggestion source.

@@ -200,8 +200,8 @@
   [role="menuitem"]:not([aria-disabled="true"]):not([data-disabled]),
   [role="menuitemcheckbox"]:not([aria-disabled="true"]):not([data-disabled]),
   [role="menuitemradio"]:not([aria-disabled="true"]):not([data-disabled]),
-  [role="button"]:not([aria-disabled="true"]),
-  [role="link"]:not([aria-disabled="true"]) {
+  [role="button"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="link"]:not([aria-disabled="true"]):not([data-disabled]) {
     cursor: pointer;
   }
 }

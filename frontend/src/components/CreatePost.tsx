@@ -136,7 +136,12 @@ export function CreatePost({
                 setContent("");
                 setMediaId(null);
                 setMediaName(null);
-              } catch {
+              } catch (error) {
+                const message =
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to create post";
+                toast.error(message);
                 return;
               }
             }}

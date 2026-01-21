@@ -48,13 +48,15 @@ export function ProfileEditDialog({
   const [avatarHovered, setAvatarHovered] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
       setBioDraft(profile.bio ?? "");
       setCoverHovered(false);
       setAvatarHovered(false);
     }
+    wasOpenRef.current = open;
   }, [open, profile.bio]);
 
   const handleSave = async () => {
@@ -146,7 +148,20 @@ export function ProfileEditDialog({
           </Button>
         </DialogHeader>
         <div className="space-y-6 px-4 pb-6 pt-4">
-          <div className="relative overflow-visible rounded-xl border border-border">
+          <div
+            className="relative overflow-visible rounded-xl border border-border outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            onMouseEnter={() => setCoverHovered(true)}
+            onMouseLeave={() => setCoverHovered(false)}
+            onFocusCapture={() => setCoverHovered(true)}
+            onBlurCapture={(event) => {
+              if (
+                !event.currentTarget.contains(event.relatedTarget as Node | null)
+              ) {
+                setCoverHovered(false);
+              }
+            }}
+            tabIndex={0}
+          >
             {profile.cover_url ? (
               <img
                 src={profile.cover_url}
@@ -159,16 +174,17 @@ export function ProfileEditDialog({
             )}
             {/* Cover overlay with edit options */}
             <div
-              className={`absolute inset-0 flex items-center justify-center gap-2 bg-black/50 transition-opacity rounded-t-xl ${
-                coverHovered ? "opacity-100" : "opacity-0"
-              }`}
-              onMouseEnter={() => setCoverHovered(true)}
-              onMouseLeave={() => setCoverHovered(false)}
+              className={`absolute inset-0 flex items-center justify-center gap-2 rounded-t-xl bg-black/50 transition-opacity ${
+                coverHovered
+                  ? "opacity-100 pointer-events-auto"
+                  : "opacity-0 pointer-events-none"
+              } focus-within:opacity-100 focus-within:pointer-events-auto`}
             >
               <Button
                 size="sm"
                 variant="secondary"
                 disabled={coverBusy}
+                tabIndex={coverHovered ? 0 : -1}
                 onClick={() => coverInputRef.current?.click()}
                 className="gap-2"
               >
@@ -180,6 +196,7 @@ export function ProfileEditDialog({
                   size="sm"
                   variant="secondary"
                   disabled={coverBusy}
+                  tabIndex={coverHovered ? 0 : -1}
                   onClick={handleRemoveCover}
                   className="gap-2"
                 >
@@ -191,9 +208,20 @@ export function ProfileEditDialog({
             {/* Avatar positioned at bottom-left, same layer as cover */}
             <div className="absolute -bottom-10 left-4 z-10">
               <div
-                className="relative"
+                className="relative outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
                 onMouseEnter={() => setAvatarHovered(true)}
                 onMouseLeave={() => setAvatarHovered(false)}
+                onFocusCapture={() => setAvatarHovered(true)}
+                onBlurCapture={(event) => {
+                  if (
+                    !event.currentTarget.contains(
+                      event.relatedTarget as Node | null,
+                    )
+                  ) {
+                    setAvatarHovered(false);
+                  }
+                }}
+                tabIndex={0}
               >
                 <Avatar className="size-20 ring-4 ring-background">
                   {avatarUrl ? (
@@ -206,14 +234,17 @@ export function ProfileEditDialog({
                 {/* Avatar edit overlay - transparent edit icon */}
                 <div
                   className={`absolute inset-0 flex items-center justify-center rounded-full bg-primary/50 transition-opacity ${
-                    avatarHovered && !avatarBusy ? "opacity-100" : "opacity-0"
-                  }`}
+                    avatarHovered && !avatarBusy
+                      ? "opacity-100 pointer-events-auto"
+                      : "opacity-0 pointer-events-none"
+                  } focus-within:opacity-100 focus-within:pointer-events-auto`}
                 >
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-full w-full rounded-full text-white hover:bg-transparent"
                     disabled={avatarBusy}
+                    tabIndex={avatarHovered ? 0 : -1}
                     onClick={() => avatarInputRef.current?.click()}
                   >
                     <IconCamera className="h-8 w-8" />
@@ -225,6 +256,7 @@ export function ProfileEditDialog({
                       size="icon-xs"
                       className="absolute -top-0.5 -right-0.5 rounded-full h-5 w-5 p-0"
                       disabled={avatarBusy}
+                      tabIndex={avatarHovered ? 0 : -1}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveAvatar();

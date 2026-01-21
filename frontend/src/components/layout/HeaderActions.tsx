@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { AlertDialogTrigger } from "@/components/animate-ui/components/radix/alert-dialog";
+import { LogoutButton } from "@/components/layout/LogoutButton";
 
 type HeaderActionsProps = {
   onCompose: () => void;
@@ -13,9 +13,7 @@ export function HeaderActions({
   return (
     <>
       <Button onClick={onCompose}>{composeLabel}</Button>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline">Logout</Button>
-      </AlertDialogTrigger>
+      <LogoutButton />
     </>
   );
 }

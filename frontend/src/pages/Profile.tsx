@@ -11,12 +11,12 @@ import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
 import { HeaderActions } from "@/components/layout/HeaderActions";
 import { LogoutDialogContent } from "@/components/layout/LogoutDialogContent";
+import { LogoutButton } from "@/components/layout/LogoutButton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { ProfileTimelineSection } from "@/components/profile/ProfileTimelineSection";
 import {
   AlertDialog,
-  AlertDialogTrigger,
 } from "@/components/animate-ui/components/radix/alert-dialog";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { ProfileRightRail } from "@/components/sidebar/ProfileRightRail";
@@ -204,13 +204,7 @@ export default function ProfilePage() {
               onHomeClick={handleGoHome}
               onProfileClick={() => navigate(profilePath)}
               onCompose={() => setComposerOpen(true)}
-              logoutAction={
-                <AlertDialogTrigger asChild>
-                  <Button className="w-full" variant="outline">
-                    Logout
-                  </Button>
-                </AlertDialogTrigger>
-              }
+              logoutAction={<LogoutButton className="w-full" />}
             />
           }
           rightRail={<ProfileRightRail />}

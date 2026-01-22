@@ -73,11 +73,47 @@ function Tooltip({
   alignOffset = 0,
   ...props
 }: TooltipProps) {
+  const provider = useTooltipProvider();
   const [isOpen, setIsOpen] = useControlledState({
     value: props?.open,
     defaultValue: props?.defaultOpen,
     onChange: props?.onOpenChange,
   });
+
+  const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  React.useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    };
+  }, []);
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+
+      if (nextOpen) {
+        setIsOpen(true);
+        return;
+      }
+
+      if (provider.closeDelay > 0) {
+        closeTimeoutRef.current = setTimeout(() => {
+          closeTimeoutRef.current = null;
+          setIsOpen(false);
+        }, provider.closeDelay);
+        return;
+      }
+
+      setIsOpen(false);
+    },
+    [provider.closeDelay, setIsOpen],
+  );
 
   return (
     <TooltipContext
@@ -86,7 +122,7 @@ function Tooltip({
       <TooltipPrimitive.Root
         data-slot="tooltip"
         {...props}
-        onOpenChange={setIsOpen}
+        onOpenChange={handleOpenChange}
       />
     </TooltipContext>
   );
@@ -165,12 +201,9 @@ function TooltipContent({
   );
 }
 
-type TooltipArrowProps = React.ComponentProps<typeof TooltipPrimitive.Arrow> & {
-  withTransition?: boolean;
-};
+type TooltipArrowProps = React.ComponentProps<typeof TooltipPrimitive.Arrow>;
 
-function TooltipArrow({ withTransition, ...props }: TooltipArrowProps) {
-  void withTransition;
+function TooltipArrow(props: TooltipArrowProps) {
   return <TooltipPrimitive.Arrow data-slot="tooltip-arrow" {...props} />;
 }
 

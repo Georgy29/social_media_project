@@ -155,7 +155,9 @@ export function ProfileEditDialog({
             onFocusCapture={() => setCoverHovered(true)}
             onBlurCapture={(event) => {
               if (
-                !event.currentTarget.contains(event.relatedTarget as Node | null)
+                !event.currentTarget.contains(
+                  event.relatedTarget as Node | null,
+                )
               ) {
                 setCoverHovered(false);
               }

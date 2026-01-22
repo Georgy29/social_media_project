@@ -3,6 +3,7 @@ import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { toast } from "sonner";
 
 import { LoginForm } from "@/components/blocks/login-form";
+import { AuthLayout } from "@/components/layout/AuthLayout";
 import { type ApiError } from "@/api/client";
 import { useLoginMutation } from "@/api/queries";
 
@@ -18,29 +19,27 @@ export default function LoginPage() {
   }, [location.state]);
 
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm md:max-w-4xl">
-        <LoginForm
-          pending={loginMutation.isPending}
-          error={error}
-          onLogin={({ username, password }) => {
-            setError(null);
-            loginMutation.mutate(
-              { username, password },
-              {
-                onSuccess: () => {
-                  toast.success("Logged in");
-                  navigate(fromPathname, { replace: true });
-                },
-                onError: (e: ApiError) => {
-                  setError(e.message);
-                  toast.error(e.message);
-                },
+    <AuthLayout contentClassName="max-w-sm md:max-w-4xl">
+      <LoginForm
+        pending={loginMutation.isPending}
+        error={error}
+        onLogin={({ username, password }) => {
+          setError(null);
+          loginMutation.mutate(
+            { username, password },
+            {
+              onSuccess: () => {
+                toast.success("Logged in");
+                navigate(fromPathname, { replace: true });
               },
-            );
-          }}
-        />
-      </div>
-    </div>
+              onError: (e: ApiError) => {
+                setError(e.message);
+                toast.error(e.message);
+              },
+            },
+          );
+        }}
+      />
+    </AuthLayout>
   );
 }

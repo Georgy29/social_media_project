@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   IconBookmark,
   IconBookmarkFilled,
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 import type { components } from "@/api/types";
 
 import { cn } from "@/lib/utils";
+import { ProfileHoverCard } from "@/components/ProfileHoverCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,28 +73,75 @@ export function PostCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.content);
   const [error, setError] = useState<string | null>(null);
-  const [likeBurst, setLikeBurst] = useState(0);
-  const [retweetBurst, setRetweetBurst] = useState(0);
+  const [likePulseKey, setLikePulseKey] = useState(0);
+  const [retweetPulseKey, setRetweetPulseKey] = useState(0);
   const [retweetMenuOpen, setRetweetMenuOpen] = useState(false);
   const retweetMenuOpenedAt = useRef(0);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
+  const [likeState, setLikeState] = useState({
+    liked: post.is_liked,
+    count: post.likes_count,
+  });
+  const [retweetState, setRetweetState] = useState({
+    retweeted: post.is_retweeted,
+    count: post.retweets_count,
+  });
+  const [likeCountKey, setLikeCountKey] = useState(0);
+  const [retweetCountKey, setRetweetCountKey] = useState(0);
+  const [likeCountDirection, setLikeCountDirection] = useState<"up" | "down">(
+    "up",
+  );
+  const [retweetCountDirection, setRetweetCountDirection] = useState<
+    "up" | "down"
+  >("up");
   const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase();
   const avatarUrl = post.owner_avatar_url ?? null;
+  const profilePath = `/profile/${encodeURIComponent(post.owner_username)}`;
   const mediaAlt = (() => {
     const snippet = post.content.trim().replace(/\s+/g, " ").slice(0, 80);
     if (snippet) return `Post image: ${snippet}`;
     return `Post image by @${post.owner_username}`;
   })();
 
+  useEffect(() => {
+    setLikeState({ liked: post.is_liked, count: post.likes_count });
+    setRetweetState({
+      retweeted: post.is_retweeted,
+      count: post.retweets_count,
+    });
+  }, [
+    post.id,
+    post.is_liked,
+    post.likes_count,
+    post.is_retweeted,
+    post.retweets_count,
+  ]);
+
   const handleToggleLike = () => {
-    setLikeBurst((value) => value + 1);
+    setLikePulseKey((value) => value + 1);
+    setLikeState((current) => {
+      const nextLiked = !current.liked;
+      const delta = nextLiked ? 1 : -1;
+      const nextCount = Math.max(0, current.count + delta);
+      setLikeCountDirection(delta > 0 ? "up" : "down");
+      setLikeCountKey((key) => key + 1);
+      return { liked: nextLiked, count: nextCount };
+    });
     onToggleLike(post);
   };
 
   const handleToggleRetweet = () => {
-    setRetweetBurst((value) => value + 1);
+    setRetweetPulseKey((value) => value + 1);
+    setRetweetState((current) => {
+      const nextRetweeted = !current.retweeted;
+      const delta = nextRetweeted ? 1 : -1;
+      const nextCount = Math.max(0, current.count + delta);
+      setRetweetCountDirection(delta > 0 ? "up" : "down");
+      setRetweetCountKey((key) => key + 1);
+      return { retweeted: nextRetweeted, count: nextCount };
+    });
     onToggleRetweet(post);
   };
 
@@ -104,7 +153,7 @@ export function PostCard({
   };
 
   const handleToggleBookmark = async () => {
-    if (pending || bookmarkBusy) return;
+    if (bookmarkBusy) return;
     const nextState = !bookmarked;
     setBookmarked(nextState);
     setBookmarkBusy(true);
@@ -123,17 +172,27 @@ export function PostCard({
     <Card>
       <CardHeader className="space-y-1">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Avatar className="size-9">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt={post.owner_username} />
-              ) : null}
-              <AvatarFallback className="text-xs font-semibold">
-                {avatarLabel}
-              </AvatarFallback>
-            </Avatar>
-            <div className="font-medium">@{post.owner_username}</div>
-          </div>
+          <ProfileHoverCard
+            username={post.owner_username}
+            userId={post.owner_id}
+            avatarUrl={avatarUrl}
+          >
+            <Link
+              to={profilePath}
+              className="flex items-center gap-2 text-left"
+              aria-label={`Open profile card for @${post.owner_username}`}
+            >
+              <Avatar className="size-9">
+                {avatarUrl ? (
+                  <AvatarImage src={avatarUrl} alt={post.owner_username} />
+                ) : null}
+                <AvatarFallback className="text-xs font-semibold">
+                  {avatarLabel}
+                </AvatarFallback>
+              </Avatar>
+              <div className="font-medium">@{post.owner_username}</div>
+            </Link>
+          </ProfileHoverCard>
           <div className="text-muted-foreground text-xs">{timeLabel}</div>
         </div>
       </CardHeader>
@@ -199,30 +258,28 @@ export function PostCard({
         <div className="flex items-center gap-2">
           <Button
             size="xs"
-            disabled={pending}
             variant="outline"
-            aria-pressed={post.is_liked}
-            aria-label={post.is_liked ? "Unlike post" : "Like post"}
+            aria-pressed={likeState.liked}
+            aria-label={likeState.liked ? "Unlike post" : "Like post"}
             className="gap-2"
             onClick={handleToggleLike}
           >
             <span
-              key={likeBurst}
-              className={cn(
-                "flex items-center",
-                likeBurst > 0
-                  ? "motion-safe:animate-[heart-pop_280ms_ease-out_1]"
-                  : "",
-              )}
+              key={likePulseKey}
+              className="motion-safe:animate-[heart-pop_280ms_ease-out_1] flex items-center"
             >
-              {post.is_liked ? (
+              {likeState.liked ? (
                 <IconHeartFilled className="text-rose-500" />
               ) : (
                 <IconHeart className="text-muted-foreground" />
               )}
             </span>
             <span className="text-xs font-medium tabular-nums">
-              {post.likes_count}
+              <AnimatedCount
+                direction={likeCountDirection}
+                value={likeState.count}
+                animationKey={likeCountKey}
+              />
             </span>
           </Button>
           <DropdownMenu
@@ -232,38 +289,36 @@ export function PostCard({
             <DropdownMenuTrigger asChild>
               <Button
                 size="xs"
-                disabled={pending}
                 variant="outline"
-                aria-pressed={post.is_retweeted}
-                aria-label={post.is_retweeted ? "Repost menu" : "Repost menu"}
+                aria-pressed={retweetState.retweeted}
+                aria-label={
+                  retweetState.retweeted ? "Repost menu" : "Repost menu"
+                }
                 className="gap-2"
               >
                 <span
-                  key={retweetBurst}
-                  className={cn(
-                    "flex items-center",
-                    retweetBurst > 0
-                      ? "motion-safe:animate-[retweet-pop_220ms_ease-out_1]"
-                      : "",
-                  )}
+                  key={retweetPulseKey}
+                  className="motion-safe:animate-[retweet-pop_220ms_ease-out_1] flex items-center"
                 >
                   <IconRepeat
                     className={cn(
                       "text-muted-foreground transition-colors duration-150",
-                      post.is_retweeted ? "text-emerald-600" : "",
+                      retweetState.retweeted ? "text-emerald-600" : "",
                     )}
                   />
                 </span>
                 <span className="text-xs font-medium tabular-nums">
-                  {post.retweets_count}
+                  <AnimatedCount
+                    direction={retweetCountDirection}
+                    value={retweetState.count}
+                    animationKey={retweetCountKey}
+                  />
                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" side="top" sideOffset={-24}>
               <DropdownMenuItem
-                disabled={pending}
                 onSelect={(event) => {
-                  if (pending) return;
                   if (Date.now() - retweetMenuOpenedAt.current < 200) {
                     event.preventDefault();
                     return;
@@ -271,13 +326,13 @@ export function PostCard({
                   handleToggleRetweet();
                 }}
               >
-                {post.is_retweeted ? "Undo repost" : "Repost"}
+                {retweetState.retweeted ? "Undo repost" : "Repost"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
             size="xs"
-            disabled={pending || bookmarkBusy}
+            disabled={bookmarkBusy}
             variant="outline"
             aria-pressed={bookmarked}
             aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
@@ -358,5 +413,28 @@ export function PostCard({
         </AlertDialog>
       ) : null}
     </Card>
+  );
+}
+
+type AnimatedCountProps = {
+  value: number;
+  direction: "up" | "down";
+  animationKey: number;
+};
+
+function AnimatedCount({ value, direction, animationKey }: AnimatedCountProps) {
+  const animationClass =
+    animationKey > 0
+      ? direction === "up"
+        ? "motion-safe:animate-[count-slide-up_160ms_ease-out_1]"
+        : "motion-safe:animate-[count-slide-down_160ms_ease-out_1]"
+      : "";
+
+  return (
+    <span className="inline-flex h-4 min-w-[1.5ch] items-center justify-center overflow-hidden tabular-nums">
+      <span key={animationKey} className={animationClass}>
+        {value}
+      </span>
+    </span>
   );
 }

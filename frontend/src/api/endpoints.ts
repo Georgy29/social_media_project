@@ -6,6 +6,7 @@ type Token = components["schemas"]["Token"];
 type User = components["schemas"]["User"];
 type UserCreate = components["schemas"]["UserCreate"];
 type UserProfile = components["schemas"]["UserProfile"];
+type UserProfileUpdate = components["schemas"]["UserProfileUpdate"];
 type AvatarUpdate = components["schemas"]["AvatarUpdate"];
 type CoverUpdate = components["schemas"]["CoverUpdate"];
 type Post = components["schemas"]["Post"];
@@ -52,6 +53,13 @@ export async function getMe(): Promise<User> {
 
 export async function getUserProfile(username: string): Promise<UserProfile> {
   return apiFetch<UserProfile>(`/users/${encodeURIComponent(username)}`);
+}
+
+export async function updateProfile(payload: UserProfileUpdate): Promise<User> {
+  return apiFetch<User>("/users/me/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function getUserTimeline(
@@ -158,4 +166,12 @@ export async function updateCover(payload: CoverUpdate): Promise<User> {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+export async function followUser(userId: number): Promise<void> {
+  return apiFetch<void>(`/users/${userId}/follow`, { method: "POST" });
+}
+
+export async function unfollowUser(userId: number): Promise<void> {
+  return apiFetch<void>(`/users/${userId}/unfollow`, { method: "POST" });
 }

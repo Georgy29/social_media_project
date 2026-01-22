@@ -4,12 +4,14 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import type { components, operations } from "./types";
 
 import {
   createPost,
   deletePost,
+  followUser,
   getFeed,
   getMe,
   getUserProfile,
@@ -22,6 +24,8 @@ import {
   retweetPost,
   unlikePost,
   unretweetPost,
+  unfollowUser,
+  updateProfile,
   updatePost,
   updateAvatar,
   updateCover,
@@ -32,6 +36,7 @@ type Token = components["schemas"]["Token"];
 type User = components["schemas"]["User"];
 type UserCreate = components["schemas"]["UserCreate"];
 type UserProfile = components["schemas"]["UserProfile"];
+type UserProfileUpdate = components["schemas"]["UserProfileUpdate"];
 type Post = components["schemas"]["Post"];
 type PostCreate = components["schemas"]["PostCreate"];
 type PostUpdate = components["schemas"]["PostUpdate"];
@@ -126,11 +131,17 @@ export function useFeedQuery(params: FeedQuery = {}) {
   });
 }
 
-export function useUserProfileQuery(username?: string) {
+export function useUserProfileQuery(
+  username?: string,
+  options?: { enabled?: boolean; staleTime?: number },
+) {
+  const enabled = options?.enabled ?? true;
+
   return useQuery<UserProfile, ApiError>({
     queryKey: queryKeys.profile.detail(username ?? ""),
     queryFn: () => getUserProfile(username ?? ""),
-    enabled: Boolean(username),
+    enabled: Boolean(username) && enabled,
+    staleTime: options?.staleTime,
   });
 }
 
@@ -250,6 +261,42 @@ export function useUpdateCoverMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.me });
       void queryClient.invalidateQueries({ queryKey: queryKeys.profile.root });
+    },
+  });
+}
+
+export function useUpdateProfileMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<User, ApiError, UserProfileUpdate>({
+    mutationFn: updateProfile,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile.root });
+    },
+  });
+}
+
+export function useToggleFollowMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    void,
+    ApiError,
+    { userId: number; username: string; isFollowed: boolean }
+  >({
+    mutationFn: async ({ userId, isFollowed }) => {
+      if (isFollowed) {
+        await unfollowUser(userId);
+      } else {
+        await followUser(userId);
+      }
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(variables.isFollowed ? "Unfollowed" : "Followed");
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.profile.detail(variables.username),
+      });
     },
   });
 }

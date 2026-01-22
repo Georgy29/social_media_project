@@ -288,15 +288,15 @@ def read_posts_with_counts(
             schemas.PostWithCounts(
                 id=post.id,
                 content=post.content,
-            timestamp=post.timestamp,
-            owner_id=post.owner_id,
-            owner_username=owner_username,
-            owner_avatar_url=owner_avatar_url,
-            likes_count=likes_count,
-            retweets_count=retweets_count,
-            is_liked=is_liked,
-            is_retweeted=is_retweeted,
-            media_url=media_url,
+                timestamp=post.timestamp,
+                owner_id=post.owner_id,
+                owner_username=owner_username,
+                owner_avatar_url=owner_avatar_url,
+                likes_count=likes_count,
+                retweets_count=retweets_count,
+                is_liked=is_liked,
+                is_retweeted=is_retweeted,
+                media_url=media_url,
             )
         )
 

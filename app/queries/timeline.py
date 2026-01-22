@@ -65,7 +65,9 @@ def fetch_user_timeline(
         .outerjoin(avatar_media, models.User.avatar_media_id == avatar_media.id)
         .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
         .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
-        .outerjoin(liked_by_viewer_subq, models.Post.id == liked_by_viewer_subq.c.post_id)
+        .outerjoin(
+            liked_by_viewer_subq, models.Post.id == liked_by_viewer_subq.c.post_id
+        )
         .outerjoin(
             retweeted_by_viewer_subq,
             models.Post.id == retweeted_by_viewer_subq.c.post_id,
@@ -96,7 +98,9 @@ def fetch_user_timeline(
         .outerjoin(avatar_media, models.User.avatar_media_id == avatar_media.id)
         .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
         .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
-        .outerjoin(liked_by_viewer_subq, models.Post.id == liked_by_viewer_subq.c.post_id)
+        .outerjoin(
+            liked_by_viewer_subq, models.Post.id == liked_by_viewer_subq.c.post_id
+        )
         .outerjoin(
             retweeted_by_viewer_subq,
             models.Post.id == retweeted_by_viewer_subq.c.post_id,

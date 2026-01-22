@@ -64,6 +64,7 @@ async def get_current_user(
         raise credentials_exception
     return user
 
+
 async def get_current_user_optional(
     token: Optional[str] = Depends(oauth2_scheme_optional),
     db: Session = Depends(get_db),
@@ -83,8 +84,6 @@ async def get_current_user_optional(
         raise credentials_exception
 
     return user
-
-
 
 
 def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:

@@ -49,13 +49,15 @@ export function PostComposerDialog({
         setMediaId(null);
         setMediaName(null);
         onOpenChange(false);
+        return true;
       }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to create post";
       toast.error(message);
-      return;
+      return false;
     }
+    return false;
   };
 
   return (
@@ -73,9 +75,9 @@ export function PostComposerDialog({
           </div>
           <div className="text-sm font-medium">Add image to your post</div>
           <div className="text-muted-foreground mt-1 text-xs">
-            Upload from your device or choose from Social.
+            Upload from your device.
           </div>
-          <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+          <div className="mt-4 flex items-center justify-center">
             <Button
               type="button"
               variant="secondary"
@@ -83,9 +85,6 @@ export function PostComposerDialog({
               onClick={() => fileInputRef.current?.click()}
             >
               Upload from device
-            </Button>
-            <Button type="button" variant="ghost">
-              Choose from Social
             </Button>
           </div>
           <input
@@ -120,10 +119,9 @@ export function PostComposerDialog({
         </div>
         <CreatePost
           pending={isPending}
-          onCreate={(content) => {
-            void handleCreate(content);
-          }}
+          onCreate={(content) => handleCreate(content)}
           showTitle={false}
+          showMediaButton={false}
           className="ring-0 shadow-none"
         />
       </DialogContent>

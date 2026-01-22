@@ -34,8 +34,8 @@ class UserProfile(BaseModel):
     cover_url: Optional[str] = None
     bio: Optional[str] = None
 
-
     model_config = ConfigDict(from_attributes=True)
+
 
 class UserProfileUpdate(BaseModel):
     bio: Optional[str] = None

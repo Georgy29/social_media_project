@@ -116,6 +116,7 @@ export function useLoginMutation() {
   return useMutation<Token, ApiError, { username: string; password: string }>({
     mutationFn: ({ username, password }) => loginUser(username, password),
     onSuccess: (token) => {
+      queryClient.clear();
       setToken(token.access_token);
       void queryClient.invalidateQueries({ queryKey: queryKeys.me });
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
@@ -128,8 +129,7 @@ export function useLogout() {
 
   return () => {
     clearToken();
-    queryClient.removeQueries({ queryKey: queryKeys.me });
-    queryClient.removeQueries({ queryKey: queryKeys.feed.root });
+    queryClient.clear();
   };
 }
 

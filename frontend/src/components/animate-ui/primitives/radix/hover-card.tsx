@@ -7,6 +7,7 @@ import { AnimatePresence, motion, type HTMLMotionProps } from "motion/react";
 
 import { useControlledState } from "@/hooks/use-controlled-state";
 import { getStrictContext } from "@/lib/get-strict-context";
+import { cn } from "@/lib/utils";
 
 type HoverCardContextType = {
   isOpen: boolean;
@@ -75,10 +76,24 @@ type HoverCardContentProps = Omit<
 
 function HoverCardContent({
   transition = { type: "spring", stiffness: 300, damping: 25 },
+  side,
+  sideOffset,
+  align,
+  alignOffset,
+  className,
   ...props
 }: HoverCardContentProps) {
+  const { isOpen } = useHoverCard();
+
   return (
-    <HoverCardPrimitive.Content asChild forceMount>
+    <HoverCardPrimitive.Content
+      asChild
+      forceMount
+      side={side}
+      sideOffset={sideOffset}
+      align={align}
+      alignOffset={alignOffset}
+    >
       <motion.div
         key="hover-card-content"
         data-slot="hover-card-content"
@@ -86,6 +101,7 @@ function HoverCardContent({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 6 }}
         transition={transition}
+        className={cn(className, !isOpen && "pointer-events-none")}
         {...props}
       />
     </HoverCardPrimitive.Content>

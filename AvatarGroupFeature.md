@@ -1,15 +1,9 @@
 ﻿# Feature: Profile Avatar Group + Shared Suggestions
 
-## Goal
-Add a profile header widget that shows relevant users connected to the viewed profile, using an Avatar Group UI (X-style).
+## Summary
+Profile header widget that shows mutuals or suggestions (X-style) and reuses the right sidebar suggestion source. UI always renders exactly **5** slots and pads with neutral placeholders.
 
-This widget must:
-- Never look empty (when viewer is authenticated)
-- Never show fake social proof
-- Reuse the same suggestion source as the right sidebar ("Who to follow")
-- Require minimal backend changes
-
-## Final Product Decisions (Locked)
+## Locked Decisions
 - UI always renders exactly **5** avatar slots.
 - Slots are either real users or **neutral placeholders**.
 - Placeholders are non-interactive (no tooltip, no click, cursor stays default).
@@ -18,27 +12,10 @@ This widget must:
   - Else: show suggestions.
 - Right sidebar: always shows suggestions.
 
-## High-Level Behavior
-The profile avatar group has two mutually exclusive states.
-
-### State A - Mutuals exist (primary)
-Show real mutual connections between the viewer and the profile user.
-
-### State B - Suggestions (fallback)
-Show suggested users (same source as the right sidebar), visually de-emphasized.
-
-Only one state is rendered at a time.
-
 ## Definitions
-**Viewer**
-- The currently authenticated user.
-
-**Profile User**
-- The user whose profile page is being viewed.
-
-**Mutual**
-- A user who is followed by the viewer AND follows the profile user.
-- This definition must remain consistent everywhere.
+- Viewer: the currently authenticated user.
+- Profile user: the user whose profile page is being viewed.
+- Mutual: followed by the viewer AND follows the profile user.
 
 ## UI Placement
 **Location**
@@ -51,7 +28,7 @@ Only one state is rendered at a time.
 - Small text
 - Avatar group inline with label
 
-## State A - Mutuals (Primary State)
+## State A — Mutuals
 **Conditions**
 - Viewer is authenticated
 - Viewer is not the profile owner
@@ -70,7 +47,7 @@ Only one state is rendered at a time.
 - Hover avatar -> show `@username`
 - Click avatar -> navigate to user profile
 
-## State B - Suggestions (Fallback State)
+## State B — Suggestions
 **Conditions**
 - Viewer is authenticated
 - AND either:
@@ -103,7 +80,7 @@ The "Who to follow" list must be driven by the same backend suggestion source fo
 - the feed right sidebar card
 - the profile header avatar group fallback
 
-## Backend API (MVP)
+## API Contract (MVP)
 ### 1) Mutuals preview
 `GET /users/{username}/mutuals/preview?limit=5`
 - Auth: required (viewer context needed)
@@ -113,13 +90,16 @@ The "Who to follow" list must be driven by the same backend suggestion source fo
   - `mutual_preview[]` (up to `limit`)
 
 ### 2) Suggestions ("Who to follow")
-`GET /users/suggestions?limit=5`
+`GET /users/discover/suggestions?limit=5`
 - Auth: required
 - `limit` defaults to 5 and is capped at 5
 - Returns: `suggestions[]` (up to `limit`)
 - Exclusions:
   - exclude viewer
   - exclude users the viewer already follows
+ - Router order: keep this route above `/users/{username}` to avoid shadowing.
+
+If the user base is small, the list can still be shorter than 5 and the UI should pad with placeholders.
 
 ## Suggestion Algorithm (MVP)
 Fill `suggestions[]` in order until `limit` is reached:
@@ -157,10 +137,22 @@ Use the same `UserPreview` shape everywhere (mutual preview, sidebar suggestions
 - Mutuals state only appears when at least one real mutual exists.
 - Sidebar and profile header suggestions are consistent (same backend source).
 
-## Reasoning
-This design:
-- matches X behavior
-- avoids empty states for new users
-- avoids deceptive social proof
-- keeps backend changes minimal
-- keeps UI stable as social graph grows
+## Status (current repo)
+### Backend
+- Schemas: `UserPreview`, `MutualsPreview`, `SuggestionsResponse`
+- Routes:
+  - `GET /users/{username}/mutuals/preview`
+  - `GET /users/discover/suggestions`
+
+### Frontend data layer
+- OpenAPI regenerated → `frontend/src/api/types.ts`
+- Endpoints + query hooks for mutuals + suggestions
+
+## Next Steps (frontend UI)
+1) Add AvatarGroup component (5 slots + placeholders).
+2) Profile header: render under stats using mutuals or suggestions.
+3) Right sidebar: use the same suggestions source.
+4) Apply visual rules: grayscale/opacity for suggestions, non-interactive placeholders.
+
+## Open Question
+- Show the widget on the owner’s profile, or hide it? (Spec implies “viewing another user”.)

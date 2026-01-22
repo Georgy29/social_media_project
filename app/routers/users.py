@@ -164,7 +164,7 @@ def get_mutuals_preview(
     return schemas.MutualsPreview(mutual_count=mutual_count, mutual_preview=preview)
 
 
-@router.get("/suggestions", response_model=schemas.SuggestionsResponse)
+@router.get("/discover/suggestions", response_model=schemas.SuggestionsResponse)
 def get_suggestions(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),

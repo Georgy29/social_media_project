@@ -1,4 +1,7 @@
-# Social Media MVP — Milestones
+# Social Media MVP — Milestones (Roadmap)
+
+This file is the **high-level roadmap** (what exists, what ships next).
+For day-to-day progress tracking, use `PLAN.md`. For release gating and deploy readiness, use `cleanup.md` + `RELEASE_1.md`.
 
 ## Target outcome (MVP)
 A recruiter/teammate can:
@@ -24,26 +27,26 @@ Everything else is Phase 2+.
 - [x] Feed with counts + owner username (`GET /posts/with_counts/`)
 - [x] Follow/unfollow users
 - [x] `GET /users/me` (or equivalent "me" endpoint)
-- [ ] README (local run + tradeoffs)
-- [ ] Docker/Deploy/CI (below)
+- [ ] README “Tradeoffs” section (local run instructions exist)
+- [ ] Deploy + CI (below)
 
 ## Milestone 0 — Lock MVP scope
 
 ### Backend scope (freeze for MVP)
-- [ ] Auth: register, login, “me”
-- [ ] Posts: create, read feed (paginated), edit (owner only), delete (optional)
-- [ ] Reactions: like/unlike, retweet/unretweet
-- [ ] Feed response includes: owner username + counts (likes/retweets)
+- [x] Auth: register, login, “me”
+- [x] Posts: create, read feed (paginated), edit (owner only), delete (optional)
+- [x] Reactions: like/unlike, retweet/unretweet
+- [x] Feed response includes: owner username + counts (likes/retweets)
 
 ### Frontend scope (freeze for MVP)
 Pages:
-- [ ] Login/Register
-- [ ] Feed (list + counts)
+- [x] Login/Register
+- [x] Feed (list + counts)
 
 Components:
-- [ ] Create post (modal or inline)
-- [ ] Like/retweet buttons
-- [ ] Basic toasts/errors/loading states
+- [x] Create post (modal or inline)
+- [x] Like/retweet buttons
+- [x] Basic toasts/errors/loading states
 
 ### Explicitly NOT in MVP (Phase 2)
 - [ ] Comments
@@ -56,20 +59,20 @@ Components:
 
 ### 1.1 Alembic migrations (must-have)
 Deliverables
-- [ ] Alembic initialized and working with SQLAlchemy models
-- [ ] `alembic revision --autogenerate` initial migration
-- [ ] `alembic upgrade head` works on a fresh DB
-- [ ] “Reset DB” workflow documented (drop + recreate + upgrade + seed)
+- [x] Alembic initialized and working with SQLAlchemy models
+- [x] `alembic revision --autogenerate` initial migration
+- [x] `alembic upgrade head` works on a fresh DB
+- [x] “Reset DB” workflow documented (drop + recreate + upgrade + seed)
 
 Definition of done
 - A teammate can clone, run one command, and the DB schema is correct.
 
 ### 1.2 Minimal Docker Compose (dev)
 Deliverables
-- [ ] `docker compose up` brings up:
+- [x] `docker compose up` brings up:
   - Postgres
   - API service
-- [ ] Environment variables managed via `.env` + `.env.example`
+- [x] Environment variables managed via `.env` + `.env.example`
 
 Definition of done
 - No local Postgres install needed to run the backend.
@@ -95,17 +98,17 @@ Definition of done
 
 ### 2.1 Frontend scaffolding
 Deliverables
-- [ ] Vite + React + TypeScript
-- [ ] Tailwind set up
-- [ ] shadcn/ui installed
-- [ ] TanStack Query installed (recommended)
+- [x] Vite + React + TypeScript
+- [x] Tailwind set up
+- [x] shadcn/ui installed
+- [x] TanStack Query installed (recommended)
 
 ### 2.2 OpenAPI → TypeScript client (controlled, repeatable)
 Deliverables
-- [ ] Repeatable script to:
+- [x] Repeatable script to:
   - fetch backend OpenAPI JSON
   - generate TypeScript types/client
-- [ ] Generated code committed OR generated in CI (pick one)
+- [x] Generated code committed (and regeneratable)
 
 Example workflow (illustrative)
 - `curl http://localhost:8000/openapi.json -o frontend/openapi.json`
@@ -117,13 +120,13 @@ Definition of done
 
 ### 2.3 UI scope (MVP)
 Deliverables
-- [ ] Auth pages (login/register)
-- [ ] Feed page:
+- [x] Auth pages (login/register)
+- [x] Feed page:
   - fetch feed
   - render posts + counts
-- [ ] Create post
-- [ ] Like/retweet buttons
-- [ ] Protected routes (basic guard)
+- [x] Create post
+- [x] Like/retweet buttons
+- [x] Protected routes (basic guard)
 
 Controlled LLM approach
 - Generate one page at a time.

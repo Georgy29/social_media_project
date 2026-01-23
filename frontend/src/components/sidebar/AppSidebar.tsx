@@ -5,6 +5,7 @@ import {
   IconSettings,
   IconUser,
 } from "@tabler/icons-react";
+import { Link } from "react-router-dom";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,10 @@ export type SidebarUser = {
 type AppSidebarProps = {
   user: SidebarUser;
   activeItem: "feed" | "profile";
-  onHomeClick: () => void;
-  onProfileClick: () => void;
+  homeHref: string;
+  profileHref: string;
+  onHomeClick?: () => void;
+  onProfileClick?: () => void;
   onCompose: () => void;
   logoutAction: ReactNode;
 };
@@ -29,6 +32,8 @@ type AppSidebarProps = {
 export function AppSidebar({
   user,
   activeItem,
+  homeHref,
+  profileHref,
   onHomeClick,
   onProfileClick,
   onCompose,
@@ -42,37 +47,43 @@ export function AppSidebar({
         className="h-auto w-full justify-start gap-3 px-3 py-3 rounded-lg border border-border bg-card hover:bg-muted/50"
         variant="ghost"
         aria-label="View profile"
-        onClick={onProfileClick}
+        asChild
       >
-        <Avatar className="size-10">
-          {user.avatarUrl ? (
-            <AvatarImage src={user.avatarUrl} alt={avatarAlt} />
-          ) : null}
-          <AvatarFallback className="text-sm font-semibold">
-            {user.avatarFallback}
-          </AvatarFallback>
-        </Avatar>
-        <div className="text-left">
-          <div className="text-base font-semibold">{user.name}</div>
-          <div className="text-muted-foreground text-sm">@{user.handle}</div>
-        </div>
+        <Link to={profileHref} onClick={onProfileClick}>
+          <Avatar className="size-10">
+            {user.avatarUrl ? (
+              <AvatarImage src={user.avatarUrl} alt={avatarAlt} />
+            ) : null}
+            <AvatarFallback className="text-sm font-semibold">
+              {user.avatarFallback}
+            </AvatarFallback>
+          </Avatar>
+          <div className="text-left">
+            <div className="text-base font-semibold">{user.name}</div>
+            <div className="text-muted-foreground text-sm">@{user.handle}</div>
+          </div>
+        </Link>
       </Button>
       <nav className="border-border bg-card rounded-lg border p-2">
         <Button
           className="w-full justify-start gap-4 h-12 text-base font-medium px-4"
           variant={activeItem === "feed" ? "secondary" : "ghost"}
-          onClick={onHomeClick}
+          asChild
         >
-          <IconHome className="h-6 w-6" aria-hidden="true" />
-          Feed
+          <Link to={homeHref} onClick={onHomeClick}>
+            <IconHome className="h-6 w-6" aria-hidden="true" />
+            Feed
+          </Link>
         </Button>
         <Button
           className="mt-1 w-full justify-start gap-4 h-12 text-base font-medium px-4"
           variant={activeItem === "profile" ? "secondary" : "ghost"}
-          onClick={onProfileClick}
+          asChild
         >
-          <IconUser className="h-6 w-6" aria-hidden="true" />
-          Profile
+          <Link to={profileHref} onClick={onProfileClick}>
+            <IconUser className="h-6 w-6" aria-hidden="true" />
+            Profile
+          </Link>
         </Button>
         <Button
           className="mt-1 w-full justify-start gap-4 h-12 text-base font-medium px-4"

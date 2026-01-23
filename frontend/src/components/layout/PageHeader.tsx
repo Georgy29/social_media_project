@@ -23,10 +23,10 @@ export function PageHeader({
         {leading ? (
           <div className="flex items-center gap-2">
             {leading}
-            <div className="text-xl font-semibold">{title}</div>
+            <h1 className="text-xl font-semibold">{title}</h1>
           </div>
         ) : (
-          <div className="text-xl font-semibold">{title}</div>
+          <h1 className="text-xl font-semibold">{title}</h1>
         )}
         {subtitle ? (
           <div className="text-muted-foreground text-sm">{subtitle}</div>

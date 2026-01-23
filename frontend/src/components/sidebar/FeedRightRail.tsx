@@ -38,7 +38,7 @@ export function FeedRightRail() {
           <li>#shadcn</li>
         </ul>
       </SidebarCard>
-      <SidebarCard title="Who to follow">
+      <SidebarCard title="Who to Follow">
         {suggestionsQuery.isError ? (
           <div className="text-muted-foreground text-sm">
             {suggestionsQuery.error.message}
@@ -78,10 +78,10 @@ export function FeedRightRail() {
           </AvatarGroup>
         )}
       </SidebarCard>
-      <SidebarCard title="Build notes">
+      <SidebarCard title="Build Notes">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="made">
-            <AccordionTrigger>How was this made?</AccordionTrigger>
+            <AccordionTrigger>How Was This Made?</AccordionTrigger>
             <AccordionContent>
               <ul className="space-y-1">
                 <li>shadcn UI + Radix UI</li>
@@ -93,7 +93,7 @@ export function FeedRightRail() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="next">
-            <AccordionTrigger>What can I do?</AccordionTrigger>
+            <AccordionTrigger>What Can I Do?</AccordionTrigger>
             <AccordionContent>
               <ul className="space-y-1">
                 <li>Post, edit, like, repost, and bookmark</li>

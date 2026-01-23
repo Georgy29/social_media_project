@@ -7,6 +7,8 @@ type User = components["schemas"]["User"];
 type UserCreate = components["schemas"]["UserCreate"];
 type UserProfile = components["schemas"]["UserProfile"];
 type UserProfileUpdate = components["schemas"]["UserProfileUpdate"];
+type MutualsPreview = components["schemas"]["MutualsPreview"];
+type SuggestionsResponse = components["schemas"]["SuggestionsResponse"];
 type AvatarUpdate = components["schemas"]["AvatarUpdate"];
 type CoverUpdate = components["schemas"]["CoverUpdate"];
 type Post = components["schemas"]["Post"];
@@ -21,6 +23,10 @@ type FeedQuery =
   operations["read_posts_with_counts_posts_with_counts__get"]["parameters"]["query"];
 type TimelineQuery =
   operations["get_user_timeline_users__username__timeline_get"]["parameters"]["query"];
+type MutualsPreviewQuery =
+  operations["get_mutuals_preview_users__username__mutuals_preview_get"]["parameters"]["query"];
+type SuggestionsQuery =
+  operations["get_suggestions_users_discover_suggestions_get"]["parameters"]["query"];
 
 export async function registerUser(payload: UserCreate): Promise<User> {
   return apiFetch<User>("/users/", {
@@ -80,6 +86,35 @@ export async function getUserTimeline(
   return apiFetch<
     paths["/users/{username}/timeline"]["get"]["responses"][200]["content"]["application/json"]
   >(path);
+}
+
+export async function getMutualsPreview(
+  username: string,
+  params: MutualsPreviewQuery = {},
+): Promise<MutualsPreview> {
+  const search = new URLSearchParams();
+  if (params?.limit !== undefined) search.set("limit", String(params.limit));
+
+  const query = search.toString();
+  const path = query
+    ? `/users/${encodeURIComponent(username)}/mutuals/preview?${query}`
+    : `/users/${encodeURIComponent(username)}/mutuals/preview`;
+
+  return apiFetch<MutualsPreview>(path);
+}
+
+export async function getSuggestions(
+  params: SuggestionsQuery = {},
+): Promise<SuggestionsResponse> {
+  const search = new URLSearchParams();
+  if (params?.limit !== undefined) search.set("limit", String(params.limit));
+
+  const query = search.toString();
+  const path = query
+    ? `/users/discover/suggestions?${query}`
+    : "/users/discover/suggestions";
+
+  return apiFetch<SuggestionsResponse>(path);
 }
 
 export async function getFeed(

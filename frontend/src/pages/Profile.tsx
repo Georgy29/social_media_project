@@ -77,10 +77,14 @@ export default function ProfilePage() {
     navigate("/login", { replace: true });
   };
 
-  const handleGoHome = () => {
+  const handleHomeAction = () => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  const handleGoHome = () => {
+    handleHomeAction();
     navigate("/feed");
   };
 
@@ -193,15 +197,16 @@ export default function ProfilePage() {
             <AppSidebar
               user={sidebarUser}
               activeItem="profile"
-              onHomeClick={handleGoHome}
-              onProfileClick={() => navigate(profilePath)}
+              homeHref="/feed"
+              profileHref={profilePath}
+              onHomeClick={handleHomeAction}
               onCompose={() => setComposerOpen(true)}
               logoutAction={<LogoutButton className="w-full" />}
             />
           }
           rightRail={<ProfileRightRail />}
         >
-          <BrandHeader onClick={handleGoHome} />
+          <BrandHeader onClick={handleHomeAction} />
           <PageHeader
             title="Profile"
             leading={

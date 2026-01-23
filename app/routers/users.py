@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -115,6 +115,111 @@ def get_user_timeline(
 
     viewer_id = current_user.id if current_user else 0
     return fetch_user_timeline(db, user.id, viewer_id, skip, limit)
+
+
+@router.get(
+    "/{username}/mutuals/preview",
+    response_model=schemas.MutualsPreview,
+)
+def get_mutuals_preview(
+    username: str,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+    limit: int = Query(5, ge=1, le=5),
+):
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        raise_not_found_exception("User not found")
+
+    f1 = models.Follow.alias("f1")  # viewer -> mutual
+    f2 = models.Follow.alias("f2")  # mutual -> profile user
+
+    mutuals_base = (
+        db.query(models.User)
+        .join(f1, f1.c.followee_id == models.User.id)
+        .join(f2, f2.c.follower_id == models.User.id)
+        .filter(
+            f1.c.follower_id == current_user.id,
+            f2.c.followee_id == user.id,
+        )
+    )
+
+    mutual_count = (
+        mutuals_base.with_entities(func.count(func.distinct(models.User.id))).scalar()
+        or 0
+    )
+
+    mutuals = mutuals_base.order_by(models.User.id.asc()).limit(limit).all()
+
+    preview = [
+        schemas.UserPreview(
+            id=mutual.id,
+            username=mutual.username,
+            avatar_url=mutual.avatar_media.public_url if mutual.avatar_media else None,
+            bio=mutual.bio,
+        )
+        for mutual in mutuals
+    ]
+
+    return schemas.MutualsPreview(mutual_count=mutual_count, mutual_preview=preview)
+
+
+@router.get("/discover/suggestions", response_model=schemas.SuggestionsResponse)
+def get_suggestions(
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+    limit: int = Query(5, ge=1, le=5),
+):
+    followed_subq = (
+        db.query(models.Follow.c.followee_id)
+        .filter(models.Follow.c.follower_id == current_user.id)
+        .subquery()
+    )
+
+    recent_authors_subq = (
+        db.query(
+            models.Post.owner_id.label("user_id"),
+            func.max(models.Post.timestamp).label("last_post_at"),
+        )
+        .group_by(models.Post.owner_id)
+        .subquery()
+    )
+
+    base_q = (
+        db.query(models.User)
+        .outerjoin(recent_authors_subq, recent_authors_subq.c.user_id == models.User.id)
+        .filter(models.User.id != current_user.id)
+        .filter(~models.User.id.in_(followed_subq))
+    )
+
+    recent = (
+        base_q.order_by(
+            func.coalesce(
+                recent_authors_subq.c.last_post_at, models.User.created_at
+            ).desc(),
+            models.User.id.desc(),
+        )
+        .limit(limit)
+        .all()
+    )
+
+    picked_ids = {u.id for u in recent}
+    if len(recent) < limit:
+        fallback_q = base_q.order_by(models.User.created_at.desc())
+        if picked_ids:
+            fallback_q = fallback_q.filter(~models.User.id.in_(picked_ids))
+        recent += fallback_q.limit(limit - len(recent)).all()
+
+    suggestions = [
+        schemas.UserPreview(
+            id=user.id,
+            username=user.username,
+            avatar_url=user.avatar_media.public_url if user.avatar_media else None,
+            bio=user.bio,
+        )
+        for user in recent
+    ]
+    return schemas.SuggestionsResponse(suggestions=suggestions)
 
 
 # User Registration Endpoint

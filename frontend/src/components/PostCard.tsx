@@ -202,6 +202,7 @@ export function PostCard({
             <Textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              aria-label="Edit post"
               disabled={pending}
               rows={3}
             />
@@ -240,13 +241,16 @@ export function PostCard({
             </div>
           </div>
         ) : (
-          <div className="whitespace-pre-wrap">{post.content}</div>
+          <div className="whitespace-pre-wrap break-words">{post.content}</div>
         )}
         {post.media_url ? (
           <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20">
             <img
               src={post.media_url}
               alt={mediaAlt}
+              // Fallback square size until media dimensions are available.
+              width={1200}
+              height={1200}
               loading="lazy"
               className="h-auto w-full max-h-105 object-contain"
             />
@@ -326,7 +330,7 @@ export function PostCard({
                   handleToggleRetweet();
                 }}
               >
-                {retweetState.retweeted ? "Undo repost" : "Repost"}
+                {retweetState.retweeted ? "Undo Repost" : "Repost"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -388,7 +392,7 @@ export function PostCard({
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete post?</AlertDialogTitle>
+              <AlertDialogTitle>Delete Post?</AlertDialogTitle>
               <AlertDialogDescription>
                 This action cannot be undone.
               </AlertDialogDescription>

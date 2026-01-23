@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ProfileMutualsRow } from "@/components/profile/ProfileMutualsRow";
 
 type UserProfile = components["schemas"]["UserProfile"];
 
@@ -99,6 +100,8 @@ export function ProfileHeader({
           posts={profile.posts_count}
           followers={profile.followers_count}
           following={profile.following_count}
+          username={profile.username}
+          isOwner={isOwner}
         />
       </CardContent>
     </Card>
@@ -109,18 +112,25 @@ type ProfileStatsRowProps = {
   posts: number;
   followers: number;
   following: number;
+  username: string;
+  isOwner: boolean;
 };
 
 function ProfileStatsRow({
   posts,
   followers,
   following,
+  username,
+  isOwner,
 }: ProfileStatsRowProps) {
   return (
     <div className="flex flex-wrap items-center gap-6">
-      <ProfileStatItem label="Posts" value={posts} />
-      <ProfileStatItem label="Followers" value={followers} />
-      <ProfileStatItem label="Following" value={following} />
+      <div className="flex flex-wrap items-center gap-6">
+        <ProfileStatItem label="Posts" value={posts} />
+        <ProfileStatItem label="Followers" value={followers} />
+        <ProfileStatItem label="Following" value={following} />
+      </div>
+      <ProfileMutualsRow username={username} isOwner={isOwner} />
     </div>
   );
 }

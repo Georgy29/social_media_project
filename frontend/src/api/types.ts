@@ -55,6 +55,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{username}/mutuals/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Mutuals Preview */
+        get: operations["get_mutuals_preview_users__username__mutuals_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/discover/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Suggestions */
+        get: operations["get_suggestions_users_discover_suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/": {
         parameters: {
             query?: never;
@@ -421,6 +455,13 @@ export interface components {
             /** Public Url */
             public_url: string;
         };
+        /** MutualsPreview */
+        MutualsPreview: {
+            /** Mutual Count */
+            mutual_count: number;
+            /** Mutual Preview */
+            mutual_preview: components["schemas"]["UserPreview"][];
+        };
         /** Post */
         Post: {
             /** Content */
@@ -475,6 +516,11 @@ export interface components {
             /** Media Url */
             media_url?: string | null;
         };
+        /** SuggestionsResponse */
+        SuggestionsResponse: {
+            /** Suggestions */
+            suggestions: components["schemas"]["UserPreview"][];
+        };
         /** TimelineItem */
         TimelineItem: {
             /**
@@ -526,6 +572,17 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** UserPreview */
+        UserPreview: {
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
+            /** Avatar Url */
+            avatar_url?: string | null;
+            /** Bio */
+            bio?: string | null;
         };
         /** UserProfile */
         UserProfile: {
@@ -651,6 +708,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimelineItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mutuals_preview_users__username__mutuals_preview_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MutualsPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_suggestions_users_discover_suggestions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -14,6 +14,8 @@ import {
   followUser,
   getFeed,
   getMe,
+  getMutualsPreview,
+  getSuggestions,
   getUserProfile,
   getUserTimeline,
   likePost,
@@ -37,6 +39,8 @@ type User = components["schemas"]["User"];
 type UserCreate = components["schemas"]["UserCreate"];
 type UserProfile = components["schemas"]["UserProfile"];
 type UserProfileUpdate = components["schemas"]["UserProfileUpdate"];
+type MutualsPreview = components["schemas"]["MutualsPreview"];
+type SuggestionsResponse = components["schemas"]["SuggestionsResponse"];
 type Post = components["schemas"]["Post"];
 type PostCreate = components["schemas"]["PostCreate"];
 type PostUpdate = components["schemas"]["PostUpdate"];
@@ -52,6 +56,10 @@ type FeedQuery =
   operations["read_posts_with_counts_posts_with_counts__get"]["parameters"]["query"];
 type TimelineQuery =
   operations["get_user_timeline_users__username__timeline_get"]["parameters"]["query"];
+type MutualsPreviewQuery =
+  operations["get_mutuals_preview_users__username__mutuals_preview_get"]["parameters"]["query"];
+type SuggestionsQuery =
+  operations["get_suggestions_users_discover_suggestions_get"]["parameters"]["query"];
 
 export const queryKeys = {
   me: ["me"] as const,
@@ -63,6 +71,15 @@ export const queryKeys = {
     root: ["timeline"] as const,
     list: (username: string, params: TimelineQuery) =>
       ["timeline", username, params] as const,
+  },
+  mutualsPreview: {
+    root: ["mutuals-preview"] as const,
+    detail: (username: string, params: MutualsPreviewQuery) =>
+      ["mutuals-preview", username, params] as const,
+  },
+  suggestions: {
+    root: ["suggestions"] as const,
+    list: (params: SuggestionsQuery) => ["suggestions", params] as const,
   },
   feed: {
     root: ["feed"] as const,
@@ -99,6 +116,7 @@ export function useLoginMutation() {
   return useMutation<Token, ApiError, { username: string; password: string }>({
     mutationFn: ({ username, password }) => loginUser(username, password),
     onSuccess: (token) => {
+      queryClient.clear();
       setToken(token.access_token);
       void queryClient.invalidateQueries({ queryKey: queryKeys.me });
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
@@ -111,8 +129,7 @@ export function useLogout() {
 
   return () => {
     clearToken();
-    queryClient.removeQueries({ queryKey: queryKeys.me });
-    queryClient.removeQueries({ queryKey: queryKeys.feed.root });
+    queryClient.clear();
   };
 }
 
@@ -153,6 +170,36 @@ export function useUserTimelineQuery(
     queryKey: queryKeys.timeline.list(username ?? "", params),
     queryFn: () => getUserTimeline(username ?? "", params),
     enabled: Boolean(username),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useMutualsPreviewQuery(
+  username?: string,
+  params: MutualsPreviewQuery = {},
+  options?: { enabled?: boolean; staleTime?: number },
+) {
+  const enabled = options?.enabled ?? true;
+
+  return useQuery<MutualsPreview, ApiError>({
+    queryKey: queryKeys.mutualsPreview.detail(username ?? "", params),
+    queryFn: () => getMutualsPreview(username ?? "", params),
+    enabled: Boolean(username) && Boolean(getToken()) && enabled,
+    staleTime: options?.staleTime ?? 60_000,
+  });
+}
+
+export function useSuggestionsQuery(
+  params: SuggestionsQuery = {},
+  options?: { enabled?: boolean; staleTime?: number },
+) {
+  const enabled = options?.enabled ?? true;
+
+  return useQuery<SuggestionsResponse, ApiError>({
+    queryKey: queryKeys.suggestions.list(params),
+    queryFn: () => getSuggestions(params),
+    enabled: Boolean(getToken()) && enabled,
+    staleTime: options?.staleTime ?? 60_000,
     placeholderData: keepPreviousData,
   });
 }

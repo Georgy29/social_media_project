@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 
 class UserBase(BaseModel):
@@ -39,6 +39,18 @@ class UserProfile(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     bio: Optional[str] = None
+
+
+class UserPreview(BaseModel):
+    id: int
+    username: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+
+
+class MutualsPreview(BaseModel):
+    mutual_count: int
+    mutual_preview: List[UserPreview]
 
 
 class AvatarUpdate(BaseModel):
@@ -137,3 +149,10 @@ class MediaCompleteResponse(BaseModel):
     media_id: int
     status: str
     public_url: str
+
+
+# Suggestions schema
+
+
+class SuggestionsResponse(BaseModel):
+    suggestions: List[UserPreview]

@@ -174,8 +174,9 @@ export default function FeedPage() {
             <AppSidebar
               user={sidebarUser}
               activeItem="feed"
+              homeHref="/feed"
+              profileHref={profilePath}
               onHomeClick={handleHomeClick}
-              onProfileClick={() => navigate(profilePath)}
               onCompose={() => setComposerOpen(true)}
               logoutAction={<LogoutButton className="w-full" />}
             />
@@ -203,7 +204,7 @@ export default function FeedPage() {
           >
             <TabsList variant="line" className="w-full justify-start gap-2">
               <TabsTrigger value="public" className="h-10 px-4 text-sm">
-                Public feed
+                Public Feed
               </TabsTrigger>
               <TabsTrigger value="subscriptions" className="h-10 px-4 text-sm">
                 Subscriptions
@@ -265,9 +266,18 @@ export default function FeedPage() {
             >
               Previous
             </Button>
-            <div className="text-muted-foreground text-sm">
-              Page {page + 1}
-              {isRefreshing ? " - Refreshing..." : ""}
+            <div className="text-muted-foreground text-sm flex items-center gap-2">
+              <span>Page {page + 1}</span>
+              {isRefreshing ? (
+                <div className="inline-flex items-center gap-1">
+                  <Spinner
+                    size="sm"
+                    label={`Refreshing\u2026`}
+                    className="inline-block"
+                  />
+                  <span>{`Refreshing\u2026`}</span>
+                </div>
+              ) : null}
             </div>
             <Button
               variant="outline"

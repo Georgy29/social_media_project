@@ -64,7 +64,7 @@ export function PostComposerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-base">New post</DialogTitle>
+          <DialogTitle className="text-base">New Post</DialogTitle>
         </DialogHeader>
         <div className="border-muted-foreground/30 bg-muted/30 rounded-xl border border-dashed p-6 text-center">
           <div className="border-muted-foreground/40 bg-background mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-dashed">
@@ -73,7 +73,7 @@ export function PostComposerDialog({
               aria-hidden="true"
             />
           </div>
-          <div className="text-sm font-medium">Add image to your post</div>
+          <div className="text-sm font-medium">Add Image to Your Post</div>
           <div className="text-muted-foreground mt-1 text-xs">
             Upload from your device.
           </div>
@@ -84,13 +84,14 @@ export function PostComposerDialog({
               disabled={pendingUpload}
               onClick={() => fileInputRef.current?.click()}
             >
-              Upload from device
+              Upload From Device
             </Button>
           </div>
           <input
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            aria-label="Upload image"
             className="hidden"
             onChange={async (event) => {
               const file = event.target.files?.[0];

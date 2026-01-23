@@ -127,7 +127,7 @@ export function ProfileHoverCard({
               </div>
             </div>
             <Button asChild size="sm" variant="outline" className="w-full">
-              <Link to={profilePath}>View profile</Link>
+              <Link to={profilePath}>View Profile</Link>
             </Button>
           </div>
         ) : (
@@ -142,7 +142,7 @@ export function ProfileHoverCard({
 
 function ProfileHoverSkeleton() {
   return (
-    <div className="animate-pulse space-y-3">
+    <div className="animate-pulse motion-reduce:animate-none space-y-3">
       <div className="flex items-center gap-3">
         <div className="bg-muted h-12 w-12 rounded-full" />
         <div className="space-y-2">

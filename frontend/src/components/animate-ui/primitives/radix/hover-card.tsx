@@ -3,7 +3,12 @@
 
 import * as React from "react";
 import { HoverCard as HoverCardPrimitive } from "radix-ui";
-import { AnimatePresence, motion, type HTMLMotionProps } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type HTMLMotionProps,
+} from "motion/react";
 
 import { useControlledState } from "@/hooks/use-controlled-state";
 import { getStrictContext } from "@/lib/get-strict-context";
@@ -84,6 +89,8 @@ function HoverCardContent({
   ...props
 }: HoverCardContentProps) {
   const { isOpen } = useHoverCard();
+  const prefersReducedMotion = useReducedMotion();
+  const resolvedTransition = prefersReducedMotion ? { duration: 0 } : transition;
 
   return (
     <HoverCardPrimitive.Content
@@ -97,10 +104,10 @@ function HoverCardContent({
       <motion.div
         key="hover-card-content"
         data-slot="hover-card-content"
-        initial={{ opacity: 0, scale: 0.96, y: 6 }}
+        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.96, y: 6 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 6 }}
-        transition={transition}
+        transition={resolvedTransition}
         className={cn(className, !isOpen && "pointer-events-none")}
         {...props}
       />

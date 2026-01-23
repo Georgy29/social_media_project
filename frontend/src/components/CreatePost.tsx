@@ -126,9 +126,9 @@ export function CreatePost({
           ) : (
             <div />
           )}
-        <Button
-          disabled={!canSubmit}
-          className="px-6"
+          <Button
+            disabled={!canSubmit}
+            className="px-6"
             onClick={async () => {
               try {
                 const didCreate = await Promise.resolve(
@@ -147,9 +147,9 @@ export function CreatePost({
                 return;
               }
             }}
-        >
-          {isBusy ? "Posting\u2026" : "Post"}
-        </Button>
+          >
+            {isBusy ? "Posting\u2026" : "Post"}
+          </Button>
         </div>
       </CardContent>
     </Card>

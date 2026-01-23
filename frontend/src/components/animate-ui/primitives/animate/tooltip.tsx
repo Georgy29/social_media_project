@@ -173,13 +173,13 @@ function TooltipContent({
   align,
   alignOffset,
   ...props
-  }: TooltipContentProps) {
+}: TooltipContentProps) {
   const tooltip = useTooltip();
   const provider = useTooltipProvider();
   const prefersReducedMotion = useReducedMotion();
   const resolvedTransition = prefersReducedMotion
     ? { duration: 0 }
-    : transition ?? provider.transition;
+    : (transition ?? provider.transition);
 
   return (
     <TooltipPortal>
@@ -194,7 +194,9 @@ function TooltipContent({
       >
         <motion.div
           key="tooltip-content"
-          initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.96, y: 6 }}
+          initial={
+            prefersReducedMotion ? false : { opacity: 0, scale: 0.96, y: 6 }
+          }
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 6 }}
           transition={resolvedTransition}

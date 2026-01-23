@@ -40,7 +40,9 @@ export function ProfileMutualsRow({
   );
   const suggestionsRaw = suggestionsQuery.data?.suggestions ?? [];
   // Profile header shouldn't recommend the profile user itself.
-  const suggestions = suggestionsRaw.filter((user) => user.username !== username);
+  const suggestions = suggestionsRaw.filter(
+    (user) => user.username !== username,
+  );
   const users = shouldShowMutuals ? mutuals : suggestions;
   const padded = Array.from({ length: 5 }, (_, i) => users[i] ?? null);
   const label = shouldShowMutuals ? "Followed by" : "Also follow";

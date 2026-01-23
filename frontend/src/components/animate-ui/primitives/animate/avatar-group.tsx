@@ -128,7 +128,9 @@ function AvatarGroup({
   ...props
 }: AvatarGroupProps) {
   const prefersReducedMotion = useReducedMotion();
-  const resolvedTransition = prefersReducedMotion ? { duration: 0 } : transition;
+  const resolvedTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : transition;
   const resolvedTooltipTransition = prefersReducedMotion
     ? { duration: 0 }
     : tooltipTransition;

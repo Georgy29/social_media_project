@@ -90,7 +90,9 @@ function HoverCardContent({
 }: HoverCardContentProps) {
   const { isOpen } = useHoverCard();
   const prefersReducedMotion = useReducedMotion();
-  const resolvedTransition = prefersReducedMotion ? { duration: 0 } : transition;
+  const resolvedTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : transition;
 
   return (
     <HoverCardPrimitive.Content
@@ -104,7 +106,9 @@ function HoverCardContent({
       <motion.div
         key="hover-card-content"
         data-slot="hover-card-content"
-        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.96, y: 6 }}
+        initial={
+          prefersReducedMotion ? false : { opacity: 0, scale: 0.96, y: 6 }
+        }
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 6 }}
         transition={resolvedTransition}

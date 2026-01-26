@@ -1,3 +1,3 @@
-# React + TypeScript + Vite + shadcn/ui
+# Frontend (Vite + React + TS)
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+See `../FRONTEND.md` for local dev instructions, the API contract, and repo conventions.

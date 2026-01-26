@@ -23,3 +23,12 @@ S3_PUBLIC_BASE_URL = os.getenv("S3_PUBLIC_BASE_URL")
 
 MEDIA_MAX_BYTES_POST = int(os.getenv("MEDIA_MAX_BYTES_POST", "5242880"))
 MEDIA_MAX_BYTES_AVATAR = int(os.getenv("MEDIA_MAX_BYTES_AVATAR", "2097152"))
+
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+RATE_LIMIT_STORAGE_URI = os.getenv("RATE_LIMIT_STORAGE_URI", "memory://")
+

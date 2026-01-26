@@ -41,9 +41,9 @@ Scope: **Release 1** (frontend + backend wiring + deploy). Source steps live in 
 - [ ] Accessibility spot check: keyboard nav works, focus visible, skip link works
 
 ### Repo/documentation
-- [ ] `README.md` has “Tradeoffs” section
+- [x] `README.md` has “Tradeoffs” section
 - [ ] `README.md` includes screenshots/GIF (optional but high signal)
-- [ ] Regenerate OpenAPI TS types (if backend contract changed): `frontend npm run api:pull && npm run api:gen`
+- [ ] Regenerate OpenAPI TS types (if backend contract changed): `cd frontend && npm run api:pull && npm run api:gen`
 
 ## Deploy Checklist (Lightsail)
 
@@ -67,16 +67,17 @@ Scope: **Release 1** (frontend + backend wiring + deploy). Source steps live in 
 ## Post-Release (nice-to-have)
 - [ ] Seed/demo data (script + docs)
 - [ ] Add CI (lint + pytest)
-- [ ] Add minimal rate limiting on auth endpoints
+- [x] Add minimal rate limiting on auth endpoints
 
 ## Backend Credibility Upgrade (pick 1 for MVP)
 
 Recommendation for this project’s MVP: **rate limiting** (simple, high-signal, low-risk).
 
-- [ ] Rate limiting (start simple, single-instance friendly)
-  - [ ] Protect `/token` and `POST /users/` (brute-force + spam)
-  - [ ] Protect write endpoints (posts/reactions/media presign)
-  - [ ] Clear error responses (429 + retry guidance)
+- [x] Rate limiting (start simple, single-instance friendly)
+  - [x] Protect `/token` and `POST /users/` (brute-force + spam)
+  - [x] Protect write endpoints (posts/reactions/media presign)
+  - [x] Clear error responses (429 + retry guidance)
+  - [x] Verified manually in Swagger (`/docs`) that endpoints return 429 after repeated requests
 
 Skip for MVP:
 - Feed caching (hard because feed includes viewer-specific flags like `is_liked`/`is_retweeted`; low ROI early)

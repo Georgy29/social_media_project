@@ -32,10 +32,11 @@ Open: `http://localhost:5173`
   - `GET /users/me` (verify session)
 - Profile
   - `GET /users/{username}` (public profile)
+  - `GET /users/{username}/timeline?skip&limit` (profile timeline)
   - `PUT /users/me/avatar` (set/clear avatar via `media_id`)
   - `PUT /users/me/cover` (set/clear cover via `media_id`)
 - Feed
-  - `GET /posts/with_counts/?skip=0&limit=10`
+  - `GET /posts/with_counts/?view=public|subscriptions&skip=0&limit=10`
 - Posts
   - `POST /posts/`
   - `PUT /posts/{post_id}` (10-min edit window)
@@ -48,17 +49,11 @@ Open: `http://localhost:5173`
   - `POST /media/{media_id}/complete` (auth) → marks media as ready
 
 ## Next wiring targets (UI exists / in progress)
-These are the next backend contracts to add so the UI can be fully “real”:
-- Subscriptions feed
-  - Extend `GET /posts/with_counts/` with a filter param (e.g. `view=public|subscriptions`).
-- Profile + timeline
-  - `GET /users/{username}` (public profile + counts)
-  - `GET /users/{username}/timeline?skip&limit`
-- Media uploads (posts + avatars)
-  - `POST /media/presign` (auth)
-  - Posts accept optional `media_id` and feed includes `media_url`
-  - `PUT /users/me/avatar` (recommend: `media_id`-based)
-  - `PUT /users/me/cover` (recommend: `media_id`-based)
+These are the next UI wiring targets to finish the “Release 1” UX:
+- Avatar upload UI (presign → PUT → complete → `PUT /users/me/avatar`)
+- Cover upload UI (presign → PUT → complete → `PUT /users/me/cover`)
+- No dead nav: Bookmarks/Search/Settings are disabled or route to “Coming soon”
+- Optional polish: hover cards + shared suggestions avatar group (see `HoverCardFeature.md`, `AvatarGroupFeature.md`)
 
 ## OpenAPI -> TypeScript types
 Generated file:

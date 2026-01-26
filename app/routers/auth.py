@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from .. import models, schemas, auth
+from ..rate_limit import limiter
 from ..database import get_db
 
 from fastapi.security import OAuth2PasswordRequestForm
@@ -23,8 +24,11 @@ db_dependency = Annotated[Session, Depends(get_db)]
     description="Exchanges username/password for a JWT access token.",
     responses={401: {"description": "Incorrect username or password"}},
 )
+@limiter.limit("5/minute")
 def login_for_access_token(
-    db: db_dependency, form_data: OAuth2PasswordRequestForm = Depends()
+    request: Request,
+    db: db_dependency,
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ):
     user = (
         db.query(models.User).filter(models.User.username == form_data.username).first()

@@ -80,7 +80,7 @@ Goal: someone can run it locally and use the whole product end-to-end.
 ### README (must-have)
 - [x] Local run instructions (docker compose)
 - [x] Local URLs + example `.env`
-- [ ] “Tradeoffs” section (what you intentionally skipped)
+- [x] “Tradeoffs” section (what you intentionally skipped)
 - [ ] Screenshots or short GIF
 
 ### UI polish (optional, high-signal)

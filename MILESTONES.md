@@ -25,9 +25,12 @@ Everything else is Phase 2+.
 - [x] Posts: create/read/edit (10-min window)/delete
 - [x] Reactions: like/unlike, retweet/unretweet
 - [x] Feed with counts + owner username (`GET /posts/with_counts/`)
+- [x] Subscriptions feed filter (`GET /posts/with_counts/?view=public|subscriptions`)
 - [x] Follow/unfollow users
 - [x] `GET /users/me` (or equivalent "me" endpoint)
-- [ ] README “Tradeoffs” section (local run instructions exist)
+- [x] Public profile + timeline (`GET /users/{username}`, `GET /users/{username}/timeline`)
+- [x] Media: presign/complete + post media + avatar/cover endpoints
+- [x] README “Tradeoffs” section (local run instructions exist)
 - [ ] Deploy + CI (below)
 
 ## Milestone 0 — Lock MVP scope
@@ -50,7 +53,6 @@ Components:
 
 ### Explicitly NOT in MVP (Phase 2)
 - [ ] Comments
-- [ ] Media uploads (images/videos)
 - [ ] Redis
 - [ ] PKCE/OIDC
 - [ ] AI moderation
@@ -140,15 +142,15 @@ Rule: “LLM writes UI, I enforce contracts.”
 ## Milestone 2.5 — Wire remaining UI (profile/subscriptions/media)
 Goal: backend contracts match the UI you’ve already started building.
 
-- [ ] Subscriptions feed (follow-based)
-  - [ ] Extend `GET /posts/with_counts/` with a filter param (e.g. `view=public|subscriptions`).
-- [ ] Profile page + timeline
-  - [ ] `GET /users/{username}` (public profile + counts)
-  - [ ] `GET /users/{username}/timeline?skip&limit`
-- [ ] Media uploads (posts + avatars)
-  - [ ] `POST /media/presign` (auth) + storage wiring
-  - [ ] Posts accept optional `media_id` and feed returns `media_url`
-  - [ ] `PUT /users/me/avatar`
+- [x] Subscriptions feed (follow-based)
+  - [x] Extend `GET /posts/with_counts/` with a filter param (e.g. `view=public|subscriptions`).
+- [x] Profile page + timeline
+  - [x] `GET /users/{username}` (public profile + counts)
+  - [x] `GET /users/{username}/timeline?skip&limit`
+- [x] Media uploads (posts + avatars)
+  - [x] `POST /media/presign` (auth) + storage wiring
+  - [x] Posts accept optional `media_id` and feed returns `media_url`
+  - [x] `PUT /users/me/avatar`
 
 ## Milestone 3 — Deployable demo
 

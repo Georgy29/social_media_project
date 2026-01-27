@@ -17,6 +17,7 @@ class _NoopLimiter:
 
         return decorator
 
+
 def _rate_limit_key(request: Request) -> str:
     user_id = getattr(request.state, "user_id", None)
     if user_id:

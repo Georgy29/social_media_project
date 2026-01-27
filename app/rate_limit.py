@@ -11,6 +11,8 @@ T = TypeVar("T", bound=Callable[..., Any])
 
 
 class _NoopLimiter:
+    enabled = False
+
     def limit(self, *_args: Any, **_kwargs: Any) -> Callable[[T], T]:
         def decorator(func: T) -> T:
             return func

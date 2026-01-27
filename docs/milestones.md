@@ -1,7 +1,7 @@
 # Social Media MVP — Milestones (Roadmap)
 
 This file is the **high-level roadmap** (what exists, what ships next).
-For day-to-day progress tracking, use `PLAN.md`. For release gating and deploy readiness, use `cleanup.md` + `RELEASE_1.md`.
+For day-to-day progress tracking, use `plan.md`. For release gating and deploy readiness, use `cleanup.md` + `release-1.md`.
 
 ## Target outcome (MVP)
 A recruiter/teammate can:

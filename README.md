@@ -58,5 +58,5 @@ Current storage is `memory://` (in-process), which is appropriate for a single-i
 To scale beyond a single process, switch `RATE_LIMIT_STORAGE_URI` to Redis (e.g. `redis://...`).
 
 ## Release docs
-- Pre-release gate checklist: `cleanup.md`
-- Step-by-step wiring + deploy: `RELEASE_1.md`
+- Pre-release gate checklist: `docs/cleanup.md`
+- Step-by-step wiring + deploy: `docs/release-1.md`

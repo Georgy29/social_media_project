@@ -17,7 +17,6 @@ services:
       retries: 10
 
   api:
-    build: .
     build:
       context: .
       args:

@@ -17,4 +17,4 @@ where = ["."]
 include = ["app*"]
 
 [tool.setuptools.dynamic]
-dependencies = { file = ["app/requirements.txt"] }
+dependencies = { file = ["app/requirements-prod.txt"] }

@@ -4,7 +4,7 @@ This guide deploys the FastAPI backend + Postgres on a single **AWS Lightsail** 
 
 ## 0) Prereqs
 - A domain you control (recommended): use `api.<your-domain>` for the backend.
-- Local repo is already working via `docker compose up`.
+- Local repo is already working via `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`.
 
 ## 1) Create the Lightsail instance
 1. Lightsail → **Create instance**
@@ -76,7 +76,7 @@ Minimum things to edit:
 
 ## 7) Bring up the stack
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 docker compose ps
 ```
 
@@ -135,5 +135,5 @@ Redeploy and smoke test from the public URL:
 
 ## 10) Production notes (quick wins)
 - Do not open Postgres to the internet (`5432`) in Lightsail networking.
-- Consider removing `ports: "5432:5432"` from `docker-compose.yml` for production (defense in depth).
+- The production compose stack does not publish Postgres to the internet.
 - With `RATE_LIMIT_STORAGE_URI=memory://`, limits are **per-process**; if you scale to multiple workers/instances, switch to Redis.

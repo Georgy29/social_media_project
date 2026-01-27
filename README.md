@@ -8,7 +8,7 @@ A small full-stack social feed demo: FastAPI + Postgres + Vite/React.
    - PowerShell: `Copy-Item .env.example .env`
 
 2) Start the backend (API + DB):
-- `docker compose up -d --build`
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
 
 The API container runs `alembic upgrade head` automatically on startup.
 
@@ -39,8 +39,8 @@ If you prefer running tests in the existing `api` container:
 If Vite errors with `Failed to resolve import "motion/react"`: run `npm install` again (your `node_modules` is out of sync with `frontend/package-lock.json`).
 
 ## Reset the database (dev)
-- `docker compose down -v`
-- `docker compose up -d --build`
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v`
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
 
 ## Tradeoffs (intentional MVP choices)
 - Auth is simple: access token stored in `localStorage` (no refresh tokens / rotation yet).

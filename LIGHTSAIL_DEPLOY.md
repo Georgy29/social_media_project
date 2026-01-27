@@ -80,6 +80,8 @@ docker compose up -d --build
 docker compose ps
 ```
 
+Note: this repo installs only production dependencies in the API container to keep memory usage low on small instances (tests/lint deps are excluded from the production image).
+
 Check logs if needed:
 ```bash
 docker compose logs -f api

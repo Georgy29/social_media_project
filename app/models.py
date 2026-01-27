@@ -53,7 +53,7 @@ class Post(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     content = Column(String(280), nullable=False)
-    timestamp = Column(DateTime, default=datetime.now(timezone.utc))
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     owner_id = Column(Integer, ForeignKey("users.id"))
     media_id = Column(Integer, ForeignKey("media.id", ondelete="SET NULL"))
 
@@ -116,7 +116,7 @@ class Retweet(Base):
     post_id = Column(
         Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True
     )
-    timestamp = Column(DateTime, default=datetime.now(timezone.utc))
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User")
     post = relationship("Post", back_populates="retweets")

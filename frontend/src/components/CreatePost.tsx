@@ -52,7 +52,7 @@ export function CreatePost({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           aria-label="Post content"
-          placeholder={"What's happening\u2026 (e.g., Shipped the MVP)"}
+          placeholder={"What's happening\u2026"}
           rows={1}
           className="min-h-12"
           disabled={isBusy}

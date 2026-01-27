@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from typing import Annotated, List
 
 from .. import models, schemas, auth
+from ..rate_limit import limiter
 from ..database import get_db
 from ..exceptions import (
     raise_not_found_exception,
@@ -224,7 +225,12 @@ def get_suggestions(
 
 # User Registration Endpoint
 @router.post("/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: db_dependency):
+@limiter.limit("3/minute")
+def create_user(
+    request: Request,
+    user: schemas.UserCreate,
+    db: db_dependency,
+):
     db_user = (
         db.query(models.User).filter(models.User.username == user.username).first()
     )
@@ -250,7 +256,9 @@ def create_user(user: schemas.UserCreate, db: db_dependency):
 
 # Follow User Endpoint
 @router.post("/{user_id}/follow", status_code=204)
+@limiter.limit("30/minute")
 def follow_user(
+    request: Request,
     user_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -269,7 +277,9 @@ def follow_user(
 
 # Unfollow User Endpoint
 @router.post("/{user_id}/unfollow", status_code=204)
+@limiter.limit("30/minute")
 def unfollow_user(
+    request: Request,
     user_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -287,7 +297,9 @@ def unfollow_user(
 
 
 @router.put("/me/avatar", response_model=schemas.User)
+@limiter.limit("5/minute")
 def update_avatar(
+    request: Request,
     payload: schemas.AvatarUpdate,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -341,7 +353,9 @@ def update_avatar(
 
 
 @router.put("/me/cover", response_model=schemas.User)
+@limiter.limit("5/minute")
 def update_cover(
+    request: Request,
     payload: schemas.CoverUpdate,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),

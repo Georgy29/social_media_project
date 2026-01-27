@@ -123,7 +123,7 @@ Right now some UI is placeholder (this is OK for a portfolio demo), but it must 
 - Switch “Public feed” vs “Subscriptions” and confirm query param changes
 
 ### A11) Profile bio + follow state + cover card
-Reference `create.md` and implement the backend + frontend steps listed there.
+Reference `HoverCardFeature.md` (bio + follow state + hover card) and `AvatarGroupFeature.md` (shared suggestions avatar group) and implement the steps listed there.
 
 ---
 

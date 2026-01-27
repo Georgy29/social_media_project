@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  IconBookmark,
   IconHome,
   IconSearch,
   IconSettings,
@@ -84,6 +85,14 @@ export function AppSidebar({
             <IconUser className="h-6 w-6" aria-hidden="true" />
             Profile
           </Link>
+        </Button>
+        <Button
+          className="mt-1 w-full justify-start gap-4 h-12 text-base font-medium px-4"
+          variant="ghost"
+          disabled
+        >
+          <IconBookmark className="h-6 w-6" aria-hidden="true" />
+          Bookmarks
         </Button>
         <Button
           className="mt-1 w-full justify-start gap-4 h-12 text-base font-medium px-4"

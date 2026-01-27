@@ -2,6 +2,12 @@
 
 This is the source-of-truth checklist for building a portfolio-grade full-stack MVP.
 
+Doc roles (avoid overlap):
+- `MILESTONES.md`: high-level roadmap
+- `PLAN.md`: current execution checklist (this file)
+- `cleanup.md`: pre-release gate checklist (short)
+- `RELEASE_1.md`: detailed step-by-step wiring + deploy
+
 ## Target outcome (MVP)
 A recruiter/teammate can:
 - open a URL
@@ -74,7 +80,7 @@ Goal: someone can run it locally and use the whole product end-to-end.
 ### README (must-have)
 - [x] Local run instructions (docker compose)
 - [x] Local URLs + example `.env`
-- [ ] “Tradeoffs” section (what you intentionally skipped)
+- [x] “Tradeoffs” section (what you intentionally skipped)
 - [ ] Screenshots or short GIF
 
 ### UI polish (optional, high-signal)
@@ -98,7 +104,7 @@ Goal: ship backend endpoints + migrations needed by the UI you already started (
 - [ ] Profile page + timeline
   - [x] Backend: `GET /users/{username}` (public profile + follower/following/post counts).
   - [x] Backend: `GET /users/{username}/timeline?skip&limit` (user posts + reposts, newest first).
-  - [ ] Frontend: add `/profile/:username` route and wire Profile nav to it.
+  - [x] Frontend: add `/profile/:username` route and wire Profile nav to it.
 
 - [ ] Media uploads (posts + avatars)
   - [x] Backend: add `media` table + Alembic migration.
@@ -115,18 +121,17 @@ Goal: ship backend endpoints + migrations needed by the UI you already started (
 Goal: ship the first “portfolio release” with media + a real profile page.
 
 - [ ] Regenerate OpenAPI TS types (`frontend/openapi.json` → `frontend/src/api/types.ts`)
-- [ ] Wire feed “Subscriptions” tab to pass `view=subscriptions`
 - [x] Wire feed “Subscriptions” tab to pass `view=subscriptions`
 - [x] Render `media_url` in the post card UI (feed)
 - [ ] Wire composer “Upload from device”:
   - [x] post image upload: presign(kind=post_image) → PUT → complete → create post(media_id)
   - [ ] avatar upload: presign(kind=avatar) → PUT → complete → `PUT /users/me/avatar`
   - [ ] cover upload: presign(kind=profile_cover) → PUT → complete → `PUT /users/me/cover`
-- [ ] Add a `/profile/:username` page using `GET /users/{username}`
-- [ ] Wire left nav “Profile” to `/profile/:username` (for me, use `/users/me` to find username)
-- [ ] Make non-wired UI honest:
-  - [ ] either hide Search/Settings or route them to “Coming soon” pages
-  - [ ] keep right sidebar (Trends/Who to follow) as static placeholder content for v1
+- [x] Add a `/profile/:username` page using `GET /users/{username}`
+- [x] Wire left nav “Profile” to `/profile/:username` (for me, use `/users/me` to find username)
+- [x] Make non-wired UI honest:
+  - [x] either hide Search/Settings or route them to “Coming soon” pages
+  - [x] keep right sidebar (Trends/Who to follow) as static placeholder content for v1
 
 ## Milestone 2 — Quality pass (tests + CI)
 Goal: the repo looks like a teammate could safely work on it.
@@ -172,6 +177,7 @@ Pick 1 product feature + 1 backend credibility upgrade.
 - [ ] Fix encoding artifacts in UI strings (e.g., Loading... text, etc.)
 - [ ] Add `/bookmarks` route placeholder or wire real page to avoid dead links
 - [ ] Search page stub + backend query (or hide the nav item until wired)
+- [ ] Add disabled Bookmarks + keep Search disabled (see `cleanup.md`)
 - [ ] Verify animate-ui usage is limited to alert dialogs; keep shadcn as the default UI set
 
 ### Backend credibility upgrades (pick 1–2)

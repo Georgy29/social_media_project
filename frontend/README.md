@@ -1,3 +1,3 @@
 # Frontend (Vite + React + TS)
 
-See `../FRONTEND.md` for local dev instructions, the API contract, and repo conventions.
+See `../docs/frontend.md` for local dev instructions, the API contract, and repo conventions.

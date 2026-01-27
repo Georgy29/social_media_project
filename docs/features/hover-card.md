@@ -96,4 +96,4 @@ If running locally:
    - Show `Follow` / `Following` using `is_followed_by_viewer` and existing follow/unfollow endpoints.
 
 ### 10) Frontend: Sidebar suggestions (no backend changes)
-Moved to `AvatarGroupFeature.md` so the sidebar and profile header can share the same suggestion source.
+Moved to `avatar-group.md` so the sidebar and profile header can share the same suggestion source.

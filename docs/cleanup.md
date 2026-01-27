@@ -2,7 +2,7 @@
 
 This file is the **single pre-release checklist** to get from “works on my machine” → “safe to deploy”.
 
-Scope: **Release 1** (frontend + backend wiring + deploy). Source steps live in `RELEASE_1.md`; this is the short gating list.
+Scope: **Release 1** (frontend + backend wiring + deploy). Source steps live in `release-1.md`; this is the short gating list.
 
 ## Decide Release Scope (fill in)
 - Release name/tag: `release-1`

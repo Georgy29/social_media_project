@@ -1,12 +1,12 @@
-# Social Media MVP — PLAN.md (Working Execution Plan)
+# Social Media MVP — Plan (Working Execution Checklist)
 
 This is the source-of-truth checklist for building a portfolio-grade full-stack MVP.
 
 Doc roles (avoid overlap):
-- `MILESTONES.md`: high-level roadmap
-- `PLAN.md`: current execution checklist (this file)
+- `milestones.md`: high-level roadmap
+- `plan.md`: current execution checklist (this file)
 - `cleanup.md`: pre-release gate checklist (short)
-- `RELEASE_1.md`: detailed step-by-step wiring + deploy
+- `release-1.md`: detailed step-by-step wiring + deploy
 
 ## Target outcome (MVP)
 A recruiter/teammate can:

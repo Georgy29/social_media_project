@@ -53,7 +53,7 @@ These are the next UI wiring targets to finish the “Release 1” UX:
 - Avatar upload UI (presign → PUT → complete → `PUT /users/me/avatar`)
 - Cover upload UI (presign → PUT → complete → `PUT /users/me/cover`)
 - No dead nav: Bookmarks/Search/Settings are disabled or route to “Coming soon”
-- Optional polish: hover cards + shared suggestions avatar group (see `HoverCardFeature.md`, `AvatarGroupFeature.md`)
+- Optional polish: hover cards + shared suggestions avatar group (see `features/hover-card.md`, `features/avatar-group.md`)
 
 ## OpenAPI -> TypeScript types
 Generated file:
@@ -95,4 +95,4 @@ Notes:
 - Keep styling token-driven via `frontend/src/index.css` (CSS variables) instead of hard-coded colors.
 
 ## Recreate guide
-For a full “from-scratch” setup walkthrough, see `FRONTEND_RECREATE.md`.
+For a full “from-scratch” setup walkthrough, see `frontend-recreate.md`.

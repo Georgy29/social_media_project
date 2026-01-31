@@ -27,6 +27,10 @@ Constraints / indexes
 - Primary key: `(user_id, post_id)` (prevents duplicates)
 - Index: `(user_id, created_at DESC)` (fast "my bookmarks" listing)
 
+Relationships (include for future-proofing)
+- Add `bookmarks` relationship on `User` and `Post`
+- Use `back_populates` on `Bookmark.user` and `Bookmark.post`
+
 ### API (auth required)
 Toggle endpoints
 - `POST /bookmarks/{post_id}` -> 204
@@ -96,4 +100,3 @@ Frontend (manual)
 - Do we want REST-style routes (`PUT/DELETE /posts/{id}/bookmark`) instead of `POST/DELETE /bookmarks/{id}`?
 - Should bookmarks list return `PostWithCounts[]` or `{ items: [{ bookmarked_at, post }] }`?
 - Do we want a left-nav item for Bookmarks now, or keep it hidden until the page exists?
-

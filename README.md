@@ -1,11 +1,14 @@
-# Social Media MVP (In progress)
+# Social Media MVP
+
+A small full-stack social feed demo: FastAPI + Postgres + Vite/React.
 
 ## Quickstart (API + Postgres via Docker)
 1) Create `.env` from the example:
-- PowerShell: `Copy-Item .env.example .env`
+   - macOS/Linux: `cp .env.example .env`
+   - PowerShell: `Copy-Item .env.example .env`
 
 2) Start the backend (API + DB):
-- `docker compose up -d --build`
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
 
 The API container runs `alembic upgrade head` automatically on startup.
 
@@ -22,7 +25,8 @@ If you prefer running tests in the existing `api` container:
 
 ## Frontend (Vite)
 1) Create `frontend/.env` from the example:
-- PowerShell: `Copy-Item frontend/.env.example frontend/.env`
+   - macOS/Linux: `cp frontend/.env.example frontend/.env`
+   - PowerShell: `Copy-Item frontend/.env.example frontend/.env`
 
 2) Install deps + run dev server:
 - `cd frontend`
@@ -35,5 +39,24 @@ If you prefer running tests in the existing `api` container:
 If Vite errors with `Failed to resolve import "motion/react"`: run `npm install` again (your `node_modules` is out of sync with `frontend/package-lock.json`).
 
 ## Reset the database (dev)
-- `docker compose down -v`
-- `docker compose up -d --build`
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v`
+- `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
+
+## Tradeoffs (intentional MVP choices)
+- Auth is simple: access token stored in `localStorage` (no refresh tokens / rotation yet).
+- Product scope is intentionally small: no comments/notifications/search (yet).
+- Infra stays minimal: no Redis/background jobs; media uses S3 presigned uploads.
+- Feed is uncached (viewer-specific flags like likes/reposts make caching trickier).
+
+## Rate limiting
+This API uses SlowAPI with a **global default** limit of `120/minute`, and **stricter overrides** on auth + write endpoints (posts, reactions, media, follow, etc). When a limit is exceeded, the API returns `429 Too Many Requests` and includes `Retry-After`/rate-limit headers.
+
+Current storage is `memory://` (in-process), which is appropriate for a single-instance demo but:
+- limits reset on restart
+- limits are not shared across multiple workers/instances
+
+To scale beyond a single process, switch `RATE_LIMIT_STORAGE_URI` to Redis (e.g. `redis://...`).
+
+## Release docs
+- Pre-release gate checklist: `docs/cleanup.md`
+- Step-by-step wiring + deploy: `docs/release-1.md`

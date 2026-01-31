@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, type Transition } from "motion/react";
+import { motion, useReducedMotion, type Transition } from "motion/react";
 
 import { getStrictContext } from "@/lib/get-strict-context";
 import { cn } from "@/lib/utils";
@@ -127,6 +127,13 @@ function AvatarGroup({
   alignOffset = 0,
   ...props
 }: AvatarGroupProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const resolvedTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : transition;
+  const resolvedTooltipTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : tooltipTransition;
   const avatars = React.Children.toArray(children).filter(
     React.isValidElement,
   ) as React.ReactElement[] | [];
@@ -134,12 +141,18 @@ function AvatarGroup({
 
   return (
     <AvatarGroupProvider
-      value={{ side, sideOffset, align, alignOffset, tooltipTransition }}
+      value={{
+        side,
+        sideOffset,
+        align,
+        alignOffset,
+        tooltipTransition: resolvedTooltipTransition,
+      }}
     >
       <TooltipProvider
         openDelay={openDelay}
         closeDelay={closeDelay}
-        transition={tooltipTransition}
+        transition={resolvedTooltipTransition}
       >
         <div
           data-slot="avatar-group"
@@ -162,9 +175,11 @@ function AvatarGroup({
                 initial={false}
                 animate={{ x: index === 0 ? 0 : translate, zIndex: baseZ }}
                 whileHover={
-                  isPlaceholder ? undefined : { x: 0, zIndex: 50, scale: 1.02 }
+                  isPlaceholder || prefersReducedMotion
+                    ? undefined
+                    : { x: 0, zIndex: 50, scale: 1.02 }
                 }
-                transition={transition}
+                transition={resolvedTransition}
               >
                 {cleaned}
               </motion.div>

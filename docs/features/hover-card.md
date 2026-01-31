@@ -41,14 +41,6 @@ viewer follows the user, and render a hover card UI on the feed.
    - Compute `is_followed_by_viewer` using the `Follow` table when a viewer is
      present.
    - Include `bio` and `is_followed_by_viewer` in `UserProfile` response.
-   CodeRabbit
-Clarify follow state computation and consider database indexes.
-
-Two recommendations:
-
-Explicit None handling: The instruction should explicitly state that is_followed_by_viewer should be False when current_user_optional is None to avoid any ambiguity.
-
-Index consideration: Querying the Follow table on every profile view could impact performance. Ensure appropriate indexes exist on the Follow table (e.g., composite index on follower_id and followed_id) for efficient lookups.
 3. Add profile update endpoint:
    - `PUT /users/me/profile` that accepts `UserProfileUpdate`.
    - Trim whitespace, enforce max length 100, allow null to clear.
@@ -104,4 +96,4 @@ If running locally:
    - Show `Follow` / `Following` using `is_followed_by_viewer` and existing follow/unfollow endpoints.
 
 ### 10) Frontend: Sidebar suggestions (no backend changes)
-Moved to `AvatarGroupFeature.md` so the sidebar and profile header can share the same suggestion source.
+Moved to `avatar-group.md` so the sidebar and profile header can share the same suggestion source.

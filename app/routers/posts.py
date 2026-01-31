@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, List, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, aliased
 
 from .. import auth, exceptions, models, schemas
+from ..rate_limit import limiter
 from ..database import get_db
 
 router = APIRouter(
@@ -29,7 +30,9 @@ def read_posts(db: db_dependency, skip: int = 0, limit: int = 10):
 
 
 @router.post("/", response_model=schemas.Post)
+@limiter.limit("15/minute")
 def create_new_post(
+    request: Request,
     post: schemas.PostCreate,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -58,7 +61,9 @@ def create_new_post(
 
 
 @router.delete("/{post_id}", status_code=204)
+@limiter.limit("10/minute")
 def delete_existing_post(
+    request: Request,
     post_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -75,7 +80,9 @@ def delete_existing_post(
 
 
 @router.put("/{post_id}", response_model=schemas.Post)
+@limiter.limit("10/minute")
 def update_post(
+    request: Request,
     post_id: int,
     post_update: schemas.PostUpdate,
     db: db_dependency,
@@ -101,7 +108,9 @@ def update_post(
 
 
 @router.post("/{post_id}/like", status_code=204)
+@limiter.limit("60/minute")
 def like_post(
+    request: Request,
     post_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -125,7 +134,9 @@ def like_post(
 
 
 @router.post("/{post_id}/unlike", status_code=204)
+@limiter.limit("60/minute")
 def unlike_post(
+    request: Request,
     post_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -144,7 +155,9 @@ def unlike_post(
 
 
 @router.post("/{post_id}/retweet", status_code=204)
+@limiter.limit("30/minute")
 def retweet_post(
+    request: Request,
     post_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -168,7 +181,9 @@ def retweet_post(
 
 
 @router.post("/{post_id}/unretweet", status_code=204)
+@limiter.limit("30/minute")
 def unretweet_post(
+    request: Request,
     post_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),

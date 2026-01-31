@@ -28,6 +28,7 @@ TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", _default_test_database_url())
 
 # set DATABASE_URL before importing app/settings
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
 from app.main import app  # noqa: E402
 from app.database import get_db  # noqa: E402

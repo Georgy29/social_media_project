@@ -1,11 +1,12 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from botocore.exceptions import ClientError
 from sqlalchemy.orm import Session
 
 from .. import auth, exceptions, models, schemas, settings
+from ..rate_limit import limiter
 from ..database import get_db
 from ..storage import s3
 
@@ -56,7 +57,9 @@ def _build_key(user_id: int, kind: str, content_type: str) -> str:
 
 
 @router.post("/presign", response_model=schemas.MediaPresignResponse)
+@limiter.limit("10/minute")
 def presign_media(
+    request: Request,
     payload: schemas.MediaPresignRequest,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -102,7 +105,9 @@ def presign_media(
 
 
 @router.post("/{media_id}/complete", response_model=schemas.MediaCompleteResponse)
+@limiter.limit("30/minute")
 def complete_media(
+    request: Request,
     media_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),

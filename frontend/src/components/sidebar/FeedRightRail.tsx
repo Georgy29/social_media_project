@@ -10,6 +10,7 @@ import {
   AvatarGroupTooltip,
 } from "@/components/animate-ui/components/animate/avatar-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useSuggestionsQuery } from "@/api/queries";
 import { Link } from "react-router-dom";
 
@@ -27,8 +28,9 @@ export function FeedRightRail() {
   return (
     <>
       <SidebarCard title="Search">
-        <div className="text-muted-foreground text-sm">
-          Find people or topics.
+        <div className="space-y-2 text-sm">
+          <div className="text-muted-foreground">Find people or topics.</div>
+          <Badge variant="secondary">Coming soon</Badge>
         </div>
       </SidebarCard>
       <SidebarCard title="Trends">
@@ -38,7 +40,7 @@ export function FeedRightRail() {
           <li>#shadcn</li>
         </ul>
       </SidebarCard>
-      <SidebarCard title="Who to follow">
+      <SidebarCard title="Who to Follow">
         {suggestionsQuery.isError ? (
           <div className="text-muted-foreground text-sm">
             {suggestionsQuery.error.message}
@@ -78,28 +80,38 @@ export function FeedRightRail() {
           </AvatarGroup>
         )}
       </SidebarCard>
-      <SidebarCard title="Build notes">
+      <SidebarCard title="About This Demo">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="made">
-            <AccordionTrigger>How was this made?</AccordionTrigger>
+            <AccordionTrigger>How Was This Made?</AccordionTrigger>
             <AccordionContent>
               <ul className="space-y-1">
-                <li>shadcn UI + Radix UI</li>
-                <li>Animate UI components</li>
-                <li>React + Vite + TypeScript</li>
-                <li>Tailwind CSS + Sonner</li>
-                <li>FastAPI backend + TanStack Query</li>
+                <li>FastAPI + Postgres (Docker Compose + Alembic)</li>
+                <li>JWT auth + OpenAPI-generated types</li>
+                <li>S3 media uploads via presigned URLs</li>
+                <li>React + Vite + TanStack Query + shadcn/ui</li>
               </ul>
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="next">
-            <AccordionTrigger>What can I do?</AccordionTrigger>
+            <AccordionTrigger>What Can I Do?</AccordionTrigger>
             <AccordionContent>
               <ul className="space-y-1">
-                <li>Post, edit, like, repost, and bookmark</li>
-                <li>Filter public vs subscriptions feed</li>
-                <li>Open the composer for richer posts</li>
-                <li>Follow people and explore trends</li>
+                <li>Create text or image posts</li>
+                <li>Edit/delete your posts (within the edit window)</li>
+                <li>Like/repost (and undo)</li>
+                <li>Browse public vs subscriptions feed</li>
+                <li>Open profiles and follow/unfollow</li>
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="planned">
+            <AccordionTrigger>{"What\u2019s Next?"}</AccordionTrigger>
+            <AccordionContent>
+              <ul className="space-y-1">
+                <li>Bookmarks: persisted state + a real page</li>
+                <li>Search: people and posts</li>
+                <li>Profile avatar group: mutuals/suggestions preview</li>
               </ul>
             </AccordionContent>
           </AccordionItem>

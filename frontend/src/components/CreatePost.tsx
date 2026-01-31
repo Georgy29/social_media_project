@@ -42,7 +42,7 @@ export function CreatePost({
     <Card size="sm" className={className}>
       {showTitle ? (
         <CardHeader>
-          <CardTitle className="text-base">Create post</CardTitle>
+          <CardTitle className="text-base">Create Post</CardTitle>
         </CardHeader>
       ) : null}
       <CardContent
@@ -51,7 +51,8 @@ export function CreatePost({
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="What's happening?"
+          aria-label="Post content"
+          placeholder={"What's happening\u2026"}
           rows={1}
           className="min-h-12"
           disabled={isBusy}
@@ -96,6 +97,7 @@ export function CreatePost({
                 ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
+                aria-label="Attach image"
                 className="hidden"
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
@@ -146,7 +148,7 @@ export function CreatePost({
               }
             }}
           >
-            {isBusy ? "Posting..." : "Post"}
+            {isBusy ? "Posting\u2026" : "Post"}
           </Button>
         </div>
       </CardContent>

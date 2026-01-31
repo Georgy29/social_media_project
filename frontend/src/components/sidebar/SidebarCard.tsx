@@ -11,7 +11,7 @@ export function SidebarCard({ title, children }: SidebarCardProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="text-sm font-semibold">{title}</div>
+        <h3 className="text-sm font-semibold">{title}</h3>
       </CardHeader>
       <CardContent className="text-sm">{children}</CardContent>
     </Card>

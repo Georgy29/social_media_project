@@ -15,14 +15,14 @@ const sizeClasses: Record<NonNullable<SpinnerProps["size"]>, string> = {
 export function Spinner({
   className,
   size = "md",
-  label = "Loading",
+  label = "Loading\u2026",
 }: SpinnerProps) {
   return (
     <div
       role="status"
       aria-label={label}
       className={cn(
-        "animate-spin rounded-full border-muted-foreground/30 border-t-foreground",
+        "animate-spin motion-reduce:animate-none rounded-full border-muted-foreground/30 border-t-foreground",
         sizeClasses[size],
         className,
       )}

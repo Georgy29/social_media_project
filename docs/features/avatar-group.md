@@ -1,4 +1,4 @@
-﻿# Feature: Profile Avatar Group + Shared Suggestions
+# Feature: Profile Avatar Group + Shared Suggestions
 
 ## Summary
 Profile header widget that shows mutuals or suggestions (X-style) and reuses the right sidebar suggestion source. UI always renders exactly **5** slots and pads with neutral placeholders.
@@ -97,7 +97,7 @@ The "Who to follow" list must be driven by the same backend suggestion source fo
 - Exclusions:
   - exclude viewer
   - exclude users the viewer already follows
- - Router order: keep this route above `/users/{username}` to avoid shadowing.
+- Router order: keep this route above `/users/{username}` to avoid shadowing.
 
 If the user base is small, the list can still be shorter than 5 and the UI should pad with placeholders.
 

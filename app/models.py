@@ -38,6 +38,9 @@ class User(Base):
     posts = relationship("Post", back_populates="owner")
     avatar_media = relationship("Media", foreign_keys=[avatar_media_id])
     profile_cover_media = relationship("Media", foreign_keys=[profile_cover_media_id])
+    bookmarks = relationship(
+        "Bookmark", back_populates="user", cascade="all, delete-orphan"
+    )
 
     followers = relationship(
         "User",
@@ -67,6 +70,12 @@ class Post(Base):
     )
     retweets = relationship(
         "Retweet",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    bookmarks = relationship(
+        "Bookmark",
         back_populates="post",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -120,3 +129,16 @@ class Retweet(Base):
 
     user = relationship("User")
     post = relationship("Post", back_populates="retweets")
+
+
+class Bookmark(Base):
+    __tablename__ = "bookmarks"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    post_id = Column(
+        Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="bookmarks")
+    post = relationship("Post", back_populates="bookmarks")

@@ -97,6 +97,7 @@ class PostWithCounts(Post):
     owner_avatar_url: Optional[str] = None
     is_liked: bool
     is_retweeted: bool
+    is_bookmarked: bool
     media_url: Optional[str] = None
 
 

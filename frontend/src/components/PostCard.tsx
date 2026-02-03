@@ -77,8 +77,9 @@ export function PostCard({
   const [retweetPulseKey, setRetweetPulseKey] = useState(0);
   const [retweetMenuOpen, setRetweetMenuOpen] = useState(false);
   const retweetMenuOpenedAt = useRef(0);
+  const hasShownBookmarkToast = useRef(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(post.is_bookmarked);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [likeState, setLikeState] = useState({
     liked: post.is_liked,
@@ -106,17 +107,26 @@ export function PostCard({
   })();
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      hasShownBookmarkToast.current =
+        window.localStorage.getItem("bookmark-toast-seen") === "1";
+    }
+  }, []);
+
+  useEffect(() => {
     setLikeState({ liked: post.is_liked, count: post.likes_count });
     setRetweetState({
       retweeted: post.is_retweeted,
       count: post.retweets_count,
     });
+    setBookmarked(post.is_bookmarked);
   }, [
     post.id,
     post.is_liked,
     post.likes_count,
     post.is_retweeted,
     post.retweets_count,
+    post.is_bookmarked,
   ]);
 
   const handleToggleLike = () => {
@@ -159,7 +169,13 @@ export function PostCard({
     setBookmarkBusy(true);
     try {
       await onToggleBookmark?.(post, nextState);
-      toast.success(nextState ? "Bookmarked" : "Bookmark removed");
+      if (nextState && !hasShownBookmarkToast.current) {
+        toast.success("Saved to Bookmarks");
+        hasShownBookmarkToast.current = true;
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("bookmark-toast-seen", "1");
+        }
+      }
     } catch {
       setBookmarked(!nextState);
       toast.error("Failed to update bookmark");

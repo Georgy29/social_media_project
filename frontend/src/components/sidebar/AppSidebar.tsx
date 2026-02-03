@@ -21,7 +21,7 @@ export type SidebarUser = {
 
 type AppSidebarProps = {
   user: SidebarUser;
-  activeItem: "feed" | "profile";
+  activeItem: "feed" | "profile" | "bookmarks";
   homeHref: string;
   profileHref: string;
   onHomeClick?: () => void;
@@ -88,11 +88,13 @@ export function AppSidebar({
         </Button>
         <Button
           className="mt-1 w-full justify-start gap-4 h-12 text-base font-medium px-4"
-          variant="ghost"
-          disabled
+          variant={activeItem === "bookmarks" ? "secondary" : "ghost"}
+          asChild
         >
-          <IconBookmark className="h-6 w-6" aria-hidden="true" />
-          Bookmarks
+          <Link to="/bookmarks">
+            <IconBookmark className="h-6 w-6" aria-hidden="true" />
+            Bookmarks
+          </Link>
         </Button>
         <Button
           className="mt-1 w-full justify-start gap-4 h-12 text-base font-medium px-4"

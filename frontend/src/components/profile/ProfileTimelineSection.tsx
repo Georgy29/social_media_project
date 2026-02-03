@@ -19,6 +19,10 @@ type ProfileTimelineSectionProps = {
   meId?: number;
   onToggleLike: (post: PostWithCounts) => void;
   onToggleRetweet: (post: PostWithCounts) => void;
+  onToggleBookmark: (
+    post: PostWithCounts,
+    nextState: boolean,
+  ) => Promise<void> | void;
   onUpdate: (postId: number, content: string) => Promise<unknown>;
   onDelete: (postId: number) => Promise<void>;
   isPostMutating: (postId: number) => boolean;
@@ -29,6 +33,7 @@ export function ProfileTimelineSection({
   meId,
   onToggleLike,
   onToggleRetweet,
+  onToggleBookmark,
   onUpdate,
   onDelete,
   isPostMutating,
@@ -118,6 +123,7 @@ export function ProfileTimelineSection({
                       isOwner={meId === item.post.owner_id}
                       onToggleLike={onToggleLike}
                       onToggleRetweet={onToggleRetweet}
+                      onToggleBookmark={onToggleBookmark}
                       onUpdate={onUpdate}
                       onDelete={onDelete}
                     />

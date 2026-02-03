@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { CreatePost } from "@/components/CreatePost";
 import { PostComposerDialog } from "@/components/PostComposerDialog";
 import { PostCard, type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
@@ -16,13 +15,12 @@ import { FeedRightRail } from "@/components/sidebar/FeedRightRail";
 import { getSidebarUser } from "@/components/sidebar/sidebar-user";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { type ApiError } from "@/api/client";
 import {
+  useBookmarksQuery,
   useCreatePostMutation,
   useDeletePostMutation,
-  useFeedQuery,
   useLogout,
   useMeQuery,
   useToggleBookmarkMutation,
@@ -31,22 +29,19 @@ import {
   useUpdatePostMutation,
 } from "@/api/queries";
 
-type FeedView = "public" | "subscriptions";
-
-export default function FeedPage() {
+export default function BookmarksPage() {
   const navigate = useNavigate();
   const logout = useLogout();
   const meQuery = useMeQuery();
 
   const [page, setPage] = useState(0);
-  const [feedView, setFeedView] = useState<FeedView>("public");
   const limit = 10;
   const params = useMemo(
-    () => ({ skip: page * limit, limit, view: feedView }),
-    [page, limit, feedView],
+    () => ({ skip: page * limit, limit }),
+    [page, limit],
   );
 
-  const feedQuery = useFeedQuery(params);
+  const bookmarksQuery = useBookmarksQuery(params);
   const createPostMutation = useCreatePostMutation();
   const updatePostMutation = useUpdatePostMutation();
   const deletePostMutation = useDeletePostMutation();
@@ -64,15 +59,14 @@ export default function FeedPage() {
     ? `/profile/${meQuery.data.username}`
     : "/feed";
 
-  const isRefreshing = feedQuery.isFetching && feedQuery.isPlaceholderData;
+  const isRefreshing =
+    bookmarksQuery.isFetching && bookmarksQuery.isPlaceholderData;
 
   const handleHomeClick = useCallback(() => {
-    setPage(0);
-    feedQuery.refetch();
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [feedQuery]);
+  }, []);
 
   const isPostMutating = useCallback(
     (postId: number) =>
@@ -177,6 +171,7 @@ export default function FeedPage() {
       return false;
     }
   };
+
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
@@ -189,7 +184,7 @@ export default function FeedPage() {
           sidebar={
             <AppSidebar
               user={sidebarUser}
-              activeItem="feed"
+              activeItem="bookmarks"
               homeHref="/feed"
               profileHref={profilePath}
               onHomeClick={handleHomeClick}
@@ -202,60 +197,33 @@ export default function FeedPage() {
         >
           <BrandHeader onClick={handleHomeClick} />
           <PageHeader
-            title="Feed"
-            subtitle={
-              meQuery.data
-                ? `Hello @${meQuery.data.username} feel free to try out my social media MVP`
-                : null
-            }
+            title="Bookmarks"
+            subtitle="Your saved posts, newest first."
           />
 
-          <Tabs
-            value={feedView}
-            onValueChange={(value) => {
-              setFeedView(value as FeedView);
-              setPage(0);
-            }}
-            className="pb-1"
-          >
-            <TabsList variant="line" className="w-full justify-start gap-2">
-              <TabsTrigger value="public" className="h-10 px-4 text-sm">
-                Public Feed
-              </TabsTrigger>
-              <TabsTrigger value="subscriptions" className="h-10 px-4 text-sm">
-                Subscriptions
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <CreatePost
-            pending={createPostMutation.isPending}
-            onCreate={(content, mediaId) => handleCreatePost(content, mediaId)}
-          />
-
-          {feedQuery.isPending ? (
+          {bookmarksQuery.isPending ? (
             <div className="flex justify-center py-10">
               <Spinner size="lg" />
             </div>
-          ) : feedQuery.isError ? (
+          ) : bookmarksQuery.isError ? (
             <div className="border-destructive/30 bg-destructive/10 rounded-md border p-4 text-center">
               <div className="text-destructive font-medium">
-                Couldn't load feed
+                Couldn't load bookmarks
               </div>
               <div className="text-muted-foreground mt-1 text-sm">
-                {feedQuery.error.message}
+                {bookmarksQuery.error.message}
               </div>
               <Button
                 className="mt-3"
                 variant="outline"
-                onClick={() => feedQuery.refetch()}
+                onClick={() => bookmarksQuery.refetch()}
               >
                 Retry
               </Button>
             </div>
-          ) : feedQuery.data.length ? (
+          ) : bookmarksQuery.data.length ? (
             <div className="space-y-3">
-              {feedQuery.data.map((post) => (
+              {bookmarksQuery.data.map((post) => (
                 <PostCard
                   key={post.id}
                   post={post}
@@ -271,14 +239,14 @@ export default function FeedPage() {
             </div>
           ) : (
             <div className="text-muted-foreground py-8 text-center">
-              No posts yet. Create your first post above.
+              No bookmarks yet. Save posts to see them here.
             </div>
           )}
 
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
-              disabled={page === 0 || feedQuery.isFetching}
+              disabled={page === 0 || bookmarksQuery.isFetching}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
             >
               Previous
@@ -299,7 +267,8 @@ export default function FeedPage() {
             <Button
               variant="outline"
               disabled={
-                feedQuery.isFetching || (feedQuery.data?.length ?? 0) < limit
+                bookmarksQuery.isFetching ||
+                (bookmarksQuery.data?.length ?? 0) < limit
               }
               onClick={() => setPage((p) => p + 1)}
             >

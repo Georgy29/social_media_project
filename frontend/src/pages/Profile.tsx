@@ -28,6 +28,7 @@ import {
   useLogout,
   useMeQuery,
   useToggleFollowMutation,
+  useToggleBookmarkMutation,
   useToggleLikeMutation,
   useToggleRetweetMutation,
   useUpdatePostMutation,
@@ -46,6 +47,7 @@ export default function ProfilePage() {
   const toggleFollowMutation = useToggleFollowMutation();
   const toggleLikeMutation = useToggleLikeMutation();
   const toggleRetweetMutation = useToggleRetweetMutation();
+  const toggleBookmarkMutation = useToggleBookmarkMutation();
   const [composerOpen, setComposerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -97,7 +99,9 @@ export default function ProfilePage() {
       (toggleLikeMutation.isPending &&
         toggleLikeMutation.variables?.postId === postId) ||
       (toggleRetweetMutation.isPending &&
-        toggleRetweetMutation.variables?.postId === postId),
+        toggleRetweetMutation.variables?.postId === postId) ||
+      (toggleBookmarkMutation.isPending &&
+        toggleBookmarkMutation.variables?.postId === postId),
     [
       updatePostMutation.isPending,
       updatePostMutation.variables?.postId,
@@ -107,6 +111,8 @@ export default function ProfilePage() {
       toggleLikeMutation.variables?.postId,
       toggleRetweetMutation.isPending,
       toggleRetweetMutation.variables?.postId,
+      toggleBookmarkMutation.isPending,
+      toggleBookmarkMutation.variables?.postId,
     ],
   );
 
@@ -132,6 +138,16 @@ export default function ProfilePage() {
       );
     },
     [toggleRetweetMutation],
+  );
+
+  const handleToggleBookmark = useCallback(
+    async (post: PostWithCounts, nextState: boolean) => {
+      await toggleBookmarkMutation.mutateAsync({
+        postId: post.id,
+        nextState,
+      });
+    },
+    [toggleBookmarkMutation],
   );
 
   const handleToggleFollow = useCallback(() => {
@@ -261,6 +277,7 @@ export default function ProfilePage() {
             meId={meQuery.data?.id}
             onToggleLike={handleToggleLike}
             onToggleRetweet={handleToggleRetweet}
+            onToggleBookmark={handleToggleBookmark}
             onUpdate={handleUpdatePost}
             onDelete={handleDeletePost}
             isPostMutating={isPostMutating}

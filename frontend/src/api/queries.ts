@@ -11,8 +11,11 @@ import type { components, operations } from "./types";
 import {
   createPost,
   deletePost,
+  addBookmark,
+  removeBookmark,
   followUser,
   getFeed,
+  getBookmarks,
   getMe,
   getMutualsPreview,
   getSuggestions,
@@ -56,6 +59,8 @@ type FeedQuery =
   operations["read_posts_with_counts_posts_with_counts__get"]["parameters"]["query"];
 type TimelineQuery =
   operations["get_user_timeline_users__username__timeline_get"]["parameters"]["query"];
+type BookmarksQuery =
+  operations["list_bookmarks_bookmarks__get"]["parameters"]["query"];
 type MutualsPreviewQuery =
   operations["get_mutuals_preview_users__username__mutuals_preview_get"]["parameters"]["query"];
 type SuggestionsQuery =
@@ -84,6 +89,10 @@ export const queryKeys = {
   feed: {
     root: ["feed"] as const,
     list: (params: FeedQuery) => ["feed", params] as const,
+  },
+  bookmarks: {
+    root: ["bookmarks"] as const,
+    list: (params: BookmarksQuery) => ["bookmarks", params] as const,
   },
 } as const;
 
@@ -143,6 +152,15 @@ export function useFeedQuery(params: FeedQuery = {}) {
   return useQuery<PostWithCounts[], ApiError>({
     queryKey: queryKeys.feed.list(params),
     queryFn: () => getFeed(params),
+    enabled: Boolean(getToken()),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useBookmarksQuery(params: BookmarksQuery = {}) {
+  return useQuery<PostWithCounts[], ApiError>({
+    queryKey: queryKeys.bookmarks.list(params),
+    queryFn: () => getBookmarks(params),
     enabled: Boolean(getToken()),
     placeholderData: keepPreviousData,
   });
@@ -272,6 +290,25 @@ export function useToggleRetweetMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
       void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
+    },
+  });
+}
+
+export function useToggleBookmarkMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, ApiError, { postId: number; nextState: boolean }>({
+    mutationFn: async ({ postId, nextState }) => {
+      if (nextState) {
+        await addBookmark(postId);
+      } else {
+        await removeBookmark(postId);
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.root });
     },
   });
 }

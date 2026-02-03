@@ -1,10 +1,11 @@
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, literal
 from sqlalchemy.orm import Session, aliased
 
 from .. import auth, exceptions, models, schemas
+from ..rate_limit import limiter
 from ..database import get_db
 
 router = APIRouter(
@@ -16,7 +17,9 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.post("/{post_id}", status_code=204)
+@limiter.limit("60/minute")
 def add_bookmark(
+    request: Request,
     post_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
@@ -37,7 +40,9 @@ def add_bookmark(
 
 
 @router.delete("/{post_id}", status_code=204)
+@limiter.limit("60/minute")
 def remove_bookmark(
+    request: Request,
     post_id: int,
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),

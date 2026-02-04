@@ -15,6 +15,7 @@ router = APIRouter(
 )
 
 db_dependency = Annotated[Session, Depends(get_db)]
+POST_MAX_LENGTH = 280
 
 
 @router.get("/", response_model=List[schemas.Post])
@@ -37,6 +38,12 @@ def create_new_post(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
+    content = post.content.strip()
+    if len(content) > POST_MAX_LENGTH:
+        exceptions.raise_bad_request_exception(
+            f"Post is too long (max {POST_MAX_LENGTH} characters)"
+        )
+
     media_id = getattr(post, "media_id", None)
     if media_id is not None:
         media = db.query(models.Media).filter(models.Media.id == media_id).first()
@@ -50,7 +57,7 @@ def create_new_post(
             exceptions.raise_bad_request_exception("Invalid media kind")
 
     db_post = models.Post(
-        content=post.content,
+        content=content,
         owner_id=current_user.id,
         media_id=media_id,
     )
@@ -88,6 +95,12 @@ def update_post(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
+    content = post_update.content.strip()
+    if len(content) > POST_MAX_LENGTH:
+        exceptions.raise_bad_request_exception(
+            f"Post is too long (max {POST_MAX_LENGTH} characters)"
+        )
+
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
         exceptions.raise_not_found_exception("Post not found")
@@ -101,7 +114,7 @@ def update_post(
             "You can only edit a post within 10 minutes of its creation"
         )
 
-    post.content = post_update.content
+    post.content = content
     db.add(post)
     db.commit()
     return post

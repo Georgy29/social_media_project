@@ -70,6 +70,7 @@ export function PostCard({
   const timeLabel = Number.isNaN(ts.valueOf())
     ? post.timestamp
     : ts.toLocaleString();
+  const MAX_POST_LENGTH = 280;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.content);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +106,7 @@ export function PostCard({
     if (snippet) return `Post image: ${snippet}`;
     return `Post image by @${post.owner_username}`;
   })();
+  const draftTooLong = draft.trim().length > MAX_POST_LENGTH;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -220,8 +222,25 @@ export function PostCard({
               onChange={(e) => setDraft(e.target.value)}
               aria-label="Edit post"
               disabled={pending}
+              maxLength={MAX_POST_LENGTH}
               rows={3}
             />
+            <div className="flex items-center justify-between">
+              <div
+                className={cn(
+                  "text-xs tabular-nums",
+                  draftTooLong ? "text-destructive" : "text-muted-foreground",
+                )}
+                aria-label={`Character count ${draft.trim().length} of ${MAX_POST_LENGTH}`}
+              >
+                {draft.trim().length}/{MAX_POST_LENGTH}
+              </div>
+              {draftTooLong ? (
+                <div className="text-destructive text-xs">
+                  Too long (max {MAX_POST_LENGTH})
+                </div>
+              ) : null}
+            </div>
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
@@ -237,7 +256,7 @@ export function PostCard({
               </Button>
               <Button
                 size="sm"
-                disabled={pending || !draft.trim()}
+                disabled={pending || !draft.trim() || draftTooLong}
                 onClick={async () => {
                   if (!onUpdate) return;
                   setError(null);

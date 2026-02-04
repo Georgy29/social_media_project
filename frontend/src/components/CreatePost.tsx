@@ -28,6 +28,7 @@ export function CreatePost({
   className,
   contentClassName,
 }: CreatePostProps) {
+  const MAX_POST_LENGTH = 280;
   const [content, setContent] = useState("");
   const [mediaId, setMediaId] = useState<number | null>(null);
   const [mediaName, setMediaName] = useState<string | null>(null);
@@ -35,8 +36,9 @@ export function CreatePost({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const trimmed = content.trim();
+  const overLimit = trimmed.length > MAX_POST_LENGTH;
   const isBusy = pending || uploading;
-  const canSubmit = Boolean(trimmed) && !isBusy;
+  const canSubmit = Boolean(trimmed) && !isBusy && !overLimit;
 
   return (
     <Card size="sm" className={className}>
@@ -55,6 +57,7 @@ export function CreatePost({
           placeholder={"What's happening\u2026"}
           rows={1}
           className="min-h-12"
+          maxLength={MAX_POST_LENGTH}
           disabled={isBusy}
         />
         {mediaName ? (
@@ -126,30 +129,41 @@ export function CreatePost({
           ) : (
             <div />
           )}
-          <Button
-            disabled={!canSubmit}
-            className="px-6"
-            onClick={async () => {
-              try {
-                const didCreate = await Promise.resolve(
-                  onCreate(trimmed, mediaId),
-                );
-                if (didCreate === false) return;
-                setContent("");
-                setMediaId(null);
-                setMediaName(null);
-              } catch (error) {
-                const message =
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to create post";
-                toast.error(message);
-                return;
-              }
-            }}
-          >
-            {isBusy ? "Posting\u2026" : "Post"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "text-muted-foreground text-xs tabular-nums",
+                trimmed.length >= MAX_POST_LENGTH ? "text-destructive" : "",
+              )}
+              aria-label={`Character count ${trimmed.length} of ${MAX_POST_LENGTH}`}
+            >
+              {trimmed.length}/{MAX_POST_LENGTH}
+            </div>
+            <Button
+              disabled={!canSubmit}
+              className="px-6"
+              onClick={async () => {
+                try {
+                  const didCreate = await Promise.resolve(
+                    onCreate(trimmed, mediaId),
+                  );
+                  if (didCreate === false) return;
+                  setContent("");
+                  setMediaId(null);
+                  setMediaName(null);
+                } catch (error) {
+                  const message =
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to create post";
+                  toast.error(message);
+                  return;
+                }
+              }}
+            >
+              {isBusy ? "Posting\u2026" : "Post"}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

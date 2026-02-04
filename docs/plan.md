@@ -175,6 +175,7 @@ Pick 1 product feature + 1 backend credibility upgrade.
 
 ## Immediate fixes (do now)
 - [ ] Fix encoding artifacts in UI strings (e.g., Loading... text, etc.)
+- [ ] Fix reaction optimistic desync: invalidate feed/timeline onSettled (or treat 409 as success) so UI resyncs after failed like/repost toggles
 - [ ] Add `/bookmarks` route placeholder or wire real page to avoid dead links
 - [ ] Search page stub + backend query (or hide the nav item until wired)
 - [ ] Add disabled Bookmarks + keep Search disabled (see `cleanup.md`)
@@ -189,6 +190,7 @@ Pick 1 product feature + 1 backend credibility upgrade.
   - [ ] Frontend: disable buttons while mutations are in-flight; optional optimistic toggles later
 - [ ] Background jobs (for “real backend” feel)
   - [ ] Add a worker (RQ/Celery/arq) for thumbnails / cleanup / email
+  - [ ] Note: background jobs often imply eventual consistency (e.g., counters/feeds can lag briefly vs writes)
   - [ ] Add a simple job status endpoint if needed
 
 ### Nice-to-have backend “portfolio” features (optional list)

@@ -251,6 +251,12 @@ def read_posts_with_counts(
         .subquery()
     )
 
+    bookmarked_by_me_subq = (
+        db.query(models.Bookmark.post_id.label("post_id"))
+        .filter(models.Bookmark.user_id == current_user.id)
+        .subquery()
+    )
+
     query = (
         db.query(
             models.Post,
@@ -260,6 +266,7 @@ def read_posts_with_counts(
             func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
             liked_by_me_subq.c.post_id.isnot(None).label("is_liked"),
             retweeted_by_me_subq.c.post_id.isnot(None).label("is_retweeted"),
+            bookmarked_by_me_subq.c.post_id.isnot(None).label("is_bookmarked"),
             models.Media.public_url.label("media_url"),
         )
         .join(models.User, models.Post.owner_id == models.User.id)
@@ -270,6 +277,10 @@ def read_posts_with_counts(
         .outerjoin(liked_by_me_subq, models.Post.id == liked_by_me_subq.c.post_id)
         .outerjoin(
             retweeted_by_me_subq, models.Post.id == retweeted_by_me_subq.c.post_id
+        )
+        .outerjoin(
+            bookmarked_by_me_subq,
+            models.Post.id == bookmarked_by_me_subq.c.post_id,
         )
     )
 
@@ -297,6 +308,7 @@ def read_posts_with_counts(
         retweets_count,
         is_liked,
         is_retweeted,
+        is_bookmarked,
         media_url,
     ) in posts:
         response_posts.append(
@@ -311,6 +323,7 @@ def read_posts_with_counts(
                 retweets_count=retweets_count,
                 is_liked=is_liked,
                 is_retweeted=is_retweeted,
+                is_bookmarked=is_bookmarked,
                 media_url=media_url,
             )
         )

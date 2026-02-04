@@ -1,5 +1,6 @@
 from typing import List
 
+
 from sqlalchemy import func, literal
 from sqlalchemy.orm import Session, aliased
 
@@ -43,6 +44,12 @@ def fetch_user_timeline(
         .subquery()
     )
 
+    bookmarked_by_viewer_subq = (
+        db.query(models.Bookmark.post_id.label("post_id"))
+        .filter(models.Bookmark.user_id == viewer_id)
+        .subquery()
+    )
+
     base_posts_q = (
         db.query(
             models.Post.id.label("post_id"),
@@ -55,6 +62,7 @@ def fetch_user_timeline(
             func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
             liked_by_viewer_subq.c.post_id.isnot(None).label("is_liked"),
             retweeted_by_viewer_subq.c.post_id.isnot(None).label("is_retweeted"),
+            bookmarked_by_viewer_subq.c.post_id.isnot(None).label("is_bookmarked"),
             models.Media.public_url.label("media_url"),
             models.Post.timestamp.label("activity_at"),
             literal("posts").label("item_type"),
@@ -72,6 +80,10 @@ def fetch_user_timeline(
             retweeted_by_viewer_subq,
             models.Post.id == retweeted_by_viewer_subq.c.post_id,
         )
+        .outerjoin(
+            bookmarked_by_viewer_subq,
+            models.Post.id == bookmarked_by_viewer_subq.c.post_id,
+        )
         .filter(models.Post.owner_id == user_id)
     )
 
@@ -87,6 +99,7 @@ def fetch_user_timeline(
             func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
             liked_by_viewer_subq.c.post_id.isnot(None).label("is_liked"),
             retweeted_by_viewer_subq.c.post_id.isnot(None).label("is_retweeted"),
+            bookmarked_by_viewer_subq.c.post_id.isnot(None).label("is_bookmarked"),
             models.Media.public_url.label("media_url"),
             models.Retweet.timestamp.label("activity_at"),
             literal("retweets").label("item_type"),
@@ -104,6 +117,10 @@ def fetch_user_timeline(
         .outerjoin(
             retweeted_by_viewer_subq,
             models.Post.id == retweeted_by_viewer_subq.c.post_id,
+        )
+        .outerjoin(
+            bookmarked_by_viewer_subq,
+            models.Post.id == bookmarked_by_viewer_subq.c.post_id,
         )
         .filter(models.Retweet.user_id == user_id)
     )
@@ -131,6 +148,7 @@ def fetch_user_timeline(
             retweets_count=row.retweets_count,
             is_liked=row.is_liked,
             is_retweeted=row.is_retweeted,
+            is_bookmarked=row.is_bookmarked,
             media_url=row.media_url,
         )
         response_items.append(

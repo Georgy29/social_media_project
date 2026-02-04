@@ -23,6 +23,8 @@ type FeedQuery =
   operations["read_posts_with_counts_posts_with_counts__get"]["parameters"]["query"];
 type TimelineQuery =
   operations["get_user_timeline_users__username__timeline_get"]["parameters"]["query"];
+type BookmarksQuery =
+  operations["list_bookmarks_bookmarks__get"]["parameters"]["query"];
 type MutualsPreviewQuery =
   operations["get_mutuals_preview_users__username__mutuals_preview_get"]["parameters"]["query"];
 type SuggestionsQuery =
@@ -170,6 +172,29 @@ export async function retweetPost(postId: number): Promise<void> {
 
 export async function unretweetPost(postId: number): Promise<void> {
   return apiFetch<void>(`/posts/${postId}/unretweet`, { method: "POST" });
+}
+
+export async function addBookmark(postId: number): Promise<void> {
+  return apiFetch<void>(`/bookmarks/${postId}`, { method: "POST" });
+}
+
+export async function removeBookmark(postId: number): Promise<void> {
+  return apiFetch<void>(`/bookmarks/${postId}`, { method: "DELETE" });
+}
+
+export async function getBookmarks(
+  params: BookmarksQuery = {},
+): Promise<PostWithCounts[]> {
+  const search = new URLSearchParams();
+  if (params?.skip !== undefined) search.set("skip", String(params.skip));
+  if (params?.limit !== undefined) search.set("limit", String(params.limit));
+
+  const query = search.toString();
+  const path = query ? `/bookmarks/?${query}` : "/bookmarks/";
+
+  return apiFetch<
+    paths["/bookmarks/"]["get"]["responses"][200]["content"]["application/json"]
+  >(path);
 }
 
 export async function presignMedia(

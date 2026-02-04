@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 
 import FeedPage from "@/pages/Feed";
+import BookmarksPage from "@/pages/Bookmarks";
 import LoginPage from "@/pages/Login";
 import ProfilePage from "@/pages/Profile";
 import RegisterPage from "@/pages/Register";
@@ -94,6 +95,14 @@ export default function App() {
           element={
             <RequireAuth>
               <FeedPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/bookmarks"
+          element={
+            <RequireAuth>
+              <BookmarksPage />
             </RequireAuth>
           }
         />

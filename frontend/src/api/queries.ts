@@ -308,7 +308,9 @@ export function useToggleBookmarkMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
       void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.root });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.bookmarks.root,
+      });
     },
   });
 }

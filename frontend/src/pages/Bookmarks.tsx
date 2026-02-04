@@ -36,10 +36,7 @@ export default function BookmarksPage() {
 
   const [page, setPage] = useState(0);
   const limit = 10;
-  const params = useMemo(
-    () => ({ skip: page * limit, limit }),
-    [page, limit],
-  );
+  const params = useMemo(() => ({ skip: page * limit, limit }), [page, limit]);
 
   const bookmarksQuery = useBookmarksQuery(params);
   const createPostMutation = useCreatePostMutation();

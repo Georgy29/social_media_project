@@ -39,7 +39,7 @@ Single global sorting rule:
 - Clicking “Reply” on a top-level comment creates a reply with:
   - `parent_id = top_level_comment.id`
   - `reply_to_comment_id = NULL`
-  - `reply_to_user_id = NULL`
+  - `reply_to_user_id = top_level_comment.user_id` (VK-style “Name,” prefix)
 - Clicking “Reply” on a reply (child comment) creates a new reply still under the same top-level comment:
   - `parent_id = top_level_comment.id`
   - `reply_to_comment_id = replied_child_comment.id`
@@ -54,7 +54,7 @@ Single global sorting rule:
 
 ### Delete Behavior
 MVP can use hard delete or soft delete.
-- Recommended: soft delete (`deleted_at`) and display “Comment deleted” while keeping thread integrity.
+- Decision: hard delete for MVP.
 
 ## Data Model (PostgreSQL)
 Table: `comments`
@@ -71,7 +71,6 @@ Required fields:
 - `content` (TEXT)
 - `like_count` (INT, default 0) (denormalized; updated by like/unlike logic)
 - `created_at`, `updated_at`
-- `deleted_at` (nullable, if soft delete)
 
 Optional (later):
 - `reply_count` for top-level comments (denormalized)
@@ -81,8 +80,11 @@ Optional (later):
 - If `parent_id IS NOT NULL` then:
   - `parent_id` must reference a top-level comment (i.e., that referenced comment has `parent_id IS NULL`).
   - `reply_to_comment_id` (if present) must reference a comment within the same `post_id` and same thread.
-  - `reply_to_user_id` (if present) must match the `user_id` of `reply_to_comment_id` (enforce in app logic).
+  - `reply_to_user_id` rules:
+    - If `reply_to_comment_id` is present, `reply_to_user_id` must match that comment’s `user_id`.
+    - If `reply_to_comment_id` is NULL, `reply_to_user_id` must be the top-level parent’s `user_id`.
 - Content must be non-empty after trim; apply a max length limit (e.g., 2000 chars).
+  - Decision: max length is 400 chars.
 
 ### Indexes
 Because sorting uses likes and time:
@@ -108,6 +110,8 @@ Validation:
 - If `reply_to_comment_id` is provided:
   - Ensure it belongs to same `post_id` and same thread (`parent_id`).
   - Ensure `reply_to_user_id` matches the targeted comment author (or compute it server-side).
+- If `reply_to_comment_id` is not provided:
+  - Set `reply_to_user_id` to the top-level parent’s `user_id` (VK-style “Name,” prefix).
 
 Response:
 - Comment DTO including author snippet and reply_to user snippet.
@@ -126,7 +130,7 @@ Response:
 
 ### Delete Comment
 `DELETE /comments/{comment_id}`
-- Hard delete OR soft delete (recommended soft).
+- Hard delete (MVP decision).
 - Auth: author or moderator/admin.
 
 ### Edit Comment (Optional but Recommended)
@@ -202,9 +206,7 @@ Cursor format:
 - Replace with server response on success; rollback on error.
 
 ### Deleted Comments Rendering
-- If `deleted_at` not null:
-  - Render “Comment deleted”
-  - Disable actions (except maybe report)
+- Not applicable for hard delete (MVP). Deleted comments disappear.
 
 ## Non-functional Requirements
 - Rate limit comment creation per user/IP (basic anti-spam).
@@ -253,3 +255,77 @@ Integration / E2E (optional):
 - Reply to top-level → appears nested
 - Reply to reply → appears under same top-level with “Name,” prefix
 
+## Execution Plan (Step-by-step)
+Recommended sequence to keep risk low and keep the app runnable at each step.
+
+1. Prep
+   - Create a feature branch: `feat/comments`
+   - Decision: hard delete.
+   - Decision: max comment length is 400 chars.
+
+2. DB + Model (Backend)
+   - Add Alembic migration:
+     - `comments` table with required columns
+     - indexes for `(post_id, parent_id, like_count DESC, created_at ASC, id ASC)`
+   - Add SQLAlchemy `Comment` model + relationships:
+     - `Comment.user`, `Comment.post`
+     - `Comment.parent` (top-level parent), `Comment.replies` (children)
+   - Ensure invariants in app logic:
+     - replies always point to a top-level `parent_id`
+     - `reply_to_*` rules enforced
+
+3. DTOs + Cursor Helpers (Backend)
+   - Add Pydantic schemas:
+     - create request
+     - comment response (include author preview + optional reply_to preview)
+   - Implement cursor encode/decode:
+     - opaque base64 cursor
+     - validate/handle malformed cursors (400)
+   - Implement “after cursor” SQL filter for the sorting triple:
+     - `like_count DESC, created_at ASC, id ASC`
+
+4. Endpoints + Tests (Backend)
+   - Implement endpoints:
+     - `POST /posts/{post_id}/comments` (create top-level or reply)
+     - `GET /posts/{post_id}/comments` (cursor pagination, top-level only)
+     - `GET /comments/{comment_id}/replies` (cursor pagination)
+     - `DELETE /comments/{comment_id}` (hard or soft)
+     - `PATCH /comments/{comment_id}` (optional but recommended)
+   - Add rate limiting to create/edit/delete as basic anti-spam.
+   - Tests (high-signal):
+     - validation (thread invariants)
+     - pagination ordering and cursor correctness
+     - delete behavior (if soft delete, verify “deleted” rendering fields)
+
+5. Frontend Route + Skeleton UI
+   - Add route: `/posts/:postId`
+   - Implement `PostDetailPage` skeleton:
+     - show the post
+     - show comments section placeholder
+
+6. Frontend Data Layer (TanStack Query)
+   - Add endpoints + query hooks for:
+     - list top-level comments (cursor)
+     - list replies for a top-level comment (cursor)
+     - create comment/reply
+     - delete (and optional edit)
+   - Use `useInfiniteQuery` for cursor pagination.
+
+7. Frontend Comments UI
+   - Render top-level comments sorted by server order.
+   - For each top-level comment:
+     - show first N replies (e.g., 3)
+     - “Load more replies” loads next pages
+   - Reply UX:
+     - Reply to top-level: `parent_id = topCommentId`
+     - Reply to reply: still `parent_id = topCommentId`, set `reply_to_*`
+     - Render “Name,” prefix when `reply_to_user` exists.
+
+8. Feed Preview Comment (Optional but Preferred)
+   - Backend: add `top_comment_preview` to feed DTO to avoid N+1 fetches.
+   - Frontend: render under each post card, click navigates to `/posts/:postId`.
+
+9. Polish + Acceptance Pass
+   - Ensure errors are readable and UX stays responsive.
+   - Verify deterministic ordering and no deep nesting.
+   - Verify rate limits behave reasonably (429 UX is acceptable).

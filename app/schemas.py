@@ -1,3 +1,4 @@
+from termios import IXON
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, Literal, List
@@ -46,6 +47,8 @@ class UserPreview(BaseModel):
     username: str
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MutualsPreview(BaseModel):
@@ -157,3 +160,34 @@ class MediaCompleteResponse(BaseModel):
 
 class SuggestionsResponse(BaseModel):
     suggestions: List[UserPreview]
+
+
+# comment schemas
+class CommentBase(BaseModel):
+    content: str
+
+
+class CommentCreate(CommentBase):
+    parent_id: Optional[int] = None
+    reply_to_comment_id: Optional[int] = None
+    reply_to_user_id: Optional[int] = None
+
+
+class CommentResponse(BaseModel):
+    id: int
+    post_id: int
+    user: UserPreview
+    parent_id: Optional[int] = None
+    reply_to_comment_id: Optional[int] = None
+    reply_to_user: Optional[UserPreview] = None
+    content: str
+    like_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CommentListResponse(BaseModel):
+    items: List[CommentResponse]
+    next_cursor: Optional[str] = None

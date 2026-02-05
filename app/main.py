@@ -5,7 +5,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from . import settings
 
-from .routers import users, posts, auth, admin, media, bookmarks
+from .routers import users, posts, auth, admin, media, bookmarks, comments
+
 from .rate_limit import limiter, rate_limit_exceeded_handler
 
 
@@ -55,3 +56,4 @@ app.include_router(posts.router)
 app.include_router(admin.router)
 app.include_router(media.router)
 app.include_router(bookmarks.router)
+app.include_router(comments.router)

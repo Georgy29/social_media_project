@@ -1,10 +1,10 @@
-# Feature Plan: Comments (VK-style Threads, X-style Navigation)
+﻿# Feature Plan: Comments (VK-style Threads, X-style Navigation)
 
 ## Goal
 Implement a comments system for a social media app:
 - X-style layout/navigation (feed in center, sidebars left/right; clicking a post navigates to a post detail route).
 - VK-style comment threading: 2-level structure (top-level comments + replies indented under each top-level comment).
-- Replies can optionally target a specific user/comment within the same thread (VK “Name,” behavior) without creating deep nesting.
+- Replies can optionally target a specific user/comment within the same thread (VK вЂњName,вЂќ behavior) without creating deep nesting.
 
 ## UX Requirements
 
@@ -25,7 +25,7 @@ Implement a comments system for a social media app:
   - Top-level comments (`parent_id` is NULL)
   - Replies (`parent_id` points to the top-level comment)
 - Replies are indented under the top-level comment.
-- Replies are initially collapsed to first N (e.g., 3). Provide “Load more replies”.
+- Replies are initially collapsed to first N (e.g., 1). Provide "Load more replies".
 
 ### Sorting (No UI Toggles)
 Single global sorting rule:
@@ -35,16 +35,16 @@ Single global sorting rule:
   - `id` ASC (final deterministic tie-breaker)
 - Replies under a top-level comment follow the same rule.
 
-### Reply UX (VK-style “reply to user” Without Deep Nesting)
-- Clicking “Reply” on a top-level comment creates a reply with:
+### Reply UX (VK-style вЂњreply to userвЂќ Without Deep Nesting)
+- Clicking вЂњReplyвЂќ on a top-level comment creates a reply with:
   - `parent_id = top_level_comment.id`
   - `reply_to_comment_id = NULL`
-  - `reply_to_user_id = top_level_comment.user_id` (VK-style “Name,” prefix)
-- Clicking “Reply” on a reply (child comment) creates a new reply still under the same top-level comment:
+  - `reply_to_user_id = top_level_comment.user_id` (VK-style вЂњName,вЂќ prefix)
+- Clicking вЂњReplyвЂќ on a reply (child comment) creates a new reply still under the same top-level comment:
   - `parent_id = top_level_comment.id`
   - `reply_to_comment_id = replied_child_comment.id`
   - `reply_to_user_id = replied_child_comment.user_id`
-- UI should render a prefix like “Name,” (clickable profile link) whenever `reply_to_user_id` is present.
+- UI should render a prefix like вЂњName,вЂќ (clickable profile link) whenever `reply_to_user_id` is present.
   - This prefix must be structural (not inferred from the text content).
 
 ### Mentions
@@ -80,8 +80,8 @@ Optional (later):
   - `parent_id` must reference a top-level comment (i.e., that referenced comment has `parent_id IS NULL`).
   - `reply_to_comment_id` (if present) must reference a comment within the same `post_id` and same thread.
   - `reply_to_user_id` rules:
-    - If `reply_to_comment_id` is present, `reply_to_user_id` must match that comment’s `user_id`.
-    - If `reply_to_comment_id` is NULL, `reply_to_user_id` must be the top-level parent’s `user_id`.
+    - If `reply_to_comment_id` is present, `reply_to_user_id` must match that commentвЂ™s `user_id`.
+    - If `reply_to_comment_id` is NULL, `reply_to_user_id` must be the top-level parentвЂ™s `user_id`.
 - Content must be non-empty after trim; apply a max length limit (e.g., 2000 chars).
   - Decision: max length is 400 chars.
 
@@ -90,6 +90,19 @@ Because sorting uses likes and time:
 - `INDEX comments_post_parent_sort ON comments(post_id, parent_id, like_count DESC, created_at ASC, id ASC)`
 - `INDEX comments_parent_sort ON comments(parent_id, like_count DESC, created_at ASC, id ASC)`
 - `INDEX comments_reply_to_comment ON comments(reply_to_comment_id)` (optional)
+
+### Comment Likes (MVP)
+Table: `comment_likes`
+- `user_id` (FK -> `users.id`, indexed)
+- `comment_id` (FK -> `comments.id`, indexed)
+- `created_at`
+- Primary key: (`user_id`, `comment_id`)
+
+Behavior:
+- Idempotent like/unlike endpoints.
+- Update `comments.like_count` on like/unlike.
+- Include `is_liked_by_viewer` in comment list DTOs via left join.
+
 
 ## API Design (FastAPI)
 
@@ -110,7 +123,7 @@ Validation:
   - Ensure it belongs to same `post_id` and same thread (`parent_id`).
   - Ensure `reply_to_user_id` matches the targeted comment author (or compute it server-side).
 - If `reply_to_comment_id` is not provided AND `parent_id` is provided:
-  - Set `reply_to_user_id` to the top-level parent’s `user_id` (VK-style “Name,” prefix).
+  - Set `reply_to_user_id` to the top-level parentвЂ™s `user_id` (VK-style вЂњName,вЂќ prefix).
 - If `parent_id` is NULL (top-level comment):
   - Ensure `reply_to_comment_id` and `reply_to_user_id` are both NULL (per constraint).
 
@@ -134,6 +147,14 @@ Response:
 - Hard delete (MVP decision).
 - Auth: author or moderator/admin.
 
+### Comment Likes
+`POST /comments/{comment_id}/like`
+- Idempotent: creates a like if missing.
+
+`DELETE /comments/{comment_id}/like`
+- Idempotent: removes a like if present.
+
+
 ### Edit Comment (Optional but Recommended)
 `PATCH /comments/{comment_id}`
 
@@ -143,7 +164,7 @@ Body:
 Rules:
 - Author only.
 - Updates `updated_at`.
-- UI shows “Edited” if `updated_at > created_at`.
+- UI shows вЂњEditedвЂќ if `updated_at > created_at`.
 
 ## Cursor Pagination Specification (Important)
 Because sorting is not purely time-based, the cursor must encode:
@@ -157,9 +178,9 @@ Sort order:
 - `id` ASC
 
 Cursor represents the last item returned.
-Next page query fetches items “after” that cursor in the same ordering.
+Next page query fetches items вЂњafterвЂќ that cursor in the same ordering.
 
-Pseudo-logic for “after cursor” (DESC on likes means “after” = lower likes; or later time; or higher id):
+Pseudo-logic for вЂњafter cursorвЂќ (DESC on likes means вЂњafterвЂќ = lower likes; or later time; or higher id):
 
 ```sql
 WHERE
@@ -171,7 +192,7 @@ LIMIT :limit
 ```
 
 Cursor format:
-- base64 of `"{like_count}|{created_at_iso}|{id}"` (or JSON → base64)
+- base64 of `"{like_count}|{created_at_iso}|{id}"` (or JSON в†’ base64)
 - Must be opaque to client; server decodes/validates.
 
 ## Frontend Implementation (React + TanStack Query)
@@ -193,17 +214,17 @@ Cursor format:
   - key: `["comments", postId]`
   - fetch with cursor
 - For each top-level comment, render replies block:
-  - initially show first N replies (e.g., 3) if available
-  - “Load more replies” uses `useInfiniteQuery`:
+  - initially show first N replies (e.g., 1) if available
+  - "Load more replies" uses `useInfiniteQuery`:
     - key: `["replies", topCommentId]`
 
 ### Reply Composer
 - Reply to top-level: create reply with `parent_id = topCommentId`.
 - Reply to a reply: set `reply_to_*` fields + still use `parent_id = topCommentId`.
-- UI shows prefix “Name,” if `reply_to_user` exists.
+- UI shows prefix вЂњName,вЂќ if `reply_to_user` exists.
 
 ### Optimistic Create (MVP)
-- Insert a temporary “pending” comment into the list (top-level or replies).
+- Insert a temporary вЂњpendingвЂќ comment into the list (top-level or replies).
 - Replace with server response on success; rollback on error.
 
 ### Deleted Comments Rendering
@@ -221,7 +242,9 @@ Cursor format:
 
 ## Backend Implementation Checklist
 - Alembic migration for `comments` table (+ indexes).
+- Alembic migration for `comment_likes` table.
 - SQLAlchemy `Comment` model + relationships.
+- SQLAlchemy `CommentLike` model + relationships (or direct table).
 - Schemas/DTOs for create/list responses (include author + reply_to user snippet).
 - Endpoints:
   - `POST /posts/{post_id}/comments`
@@ -229,6 +252,8 @@ Cursor format:
   - `GET /comments/{comment_id}/replies` (cursor)
   - `DELETE /comments/{comment_id}` (hard delete for MVP)
   - `PATCH /comments/{comment_id}` (optional)
+  - `POST /comments/{comment_id}/like` (idempotent)
+  - `DELETE /comments/{comment_id}/like` (idempotent)
 - Cursor encode/decode utilities + unit tests for ordering and cursor correctness.
 - Feed query update to include `top_comment_preview` (optional but preferred).
 
@@ -238,16 +263,18 @@ Cursor format:
   - renders post
   - renders comments + replies
 - Add API endpoints + query hooks for comments/replies (cursor pagination).
+- Add API endpoints + query hooks for comment like/unlike.
 - Add comment composer + reply composer:
   - structural reply-to behavior
-  - “Load more replies”
+  - "Load more replies"
+- Add comment like button + optimistic toggle.
 - Feed: render preview comment under post card.
 
 ## Test Plan
 Backend:
 - Cursor ordering is correct and deterministic:
   - likes DESC, created_at ASC, id ASC
-  - “after cursor” returns the right next page
+  - вЂњafter cursorвЂќ returns the right next page
 - Validation:
   - cannot reply to non-top-level as parent_id
   - reply_to_comment must be in same post/thread
@@ -257,9 +284,9 @@ Backend:
   - verify replies are handled appropriately (cascade or orphan prevention)
 
 Integration / E2E (optional):
-- Create top-level comment → appears in post detail
-- Reply to top-level → appears nested
-- Reply to reply → appears under same top-level with “Name,” prefix
+- Create top-level comment в†’ appears in post detail
+- Reply to top-level в†’ appears nested
+- Reply to reply в†’ appears under same top-level with вЂњName,вЂќ prefix
 
 ## Execution Plan (Step-by-step)
 Recommended sequence to keep risk low and keep the app runnable at each step.
@@ -273,9 +300,11 @@ Recommended sequence to keep risk low and keep the app runnable at each step.
    - Add Alembic migration:
      - `comments` table with required columns
      - indexes for `(post_id, parent_id, like_count DESC, created_at ASC, id ASC)`
+     - `comment_likes` table
    - Add SQLAlchemy `Comment` model + relationships:
      - `Comment.user`, `Comment.post`
      - `Comment.parent` (top-level parent), `Comment.replies` (children)
+   - Add SQLAlchemy `CommentLike` model + relationships (or direct table).
    - Ensure invariants in app logic:
      - replies always point to a top-level `parent_id`
      - `reply_to_*` rules enforced
@@ -287,7 +316,7 @@ Recommended sequence to keep risk low and keep the app runnable at each step.
    - Implement cursor encode/decode:
      - opaque base64 cursor
      - validate/handle malformed cursors (400)
-   - Implement “after cursor” SQL filter for the sorting triple:
+   - Implement вЂњafter cursorвЂќ SQL filter for the sorting triple:
      - `like_count DESC, created_at ASC, id ASC`
 
 4. Endpoints + Tests (Backend)
@@ -297,11 +326,14 @@ Recommended sequence to keep risk low and keep the app runnable at each step.
      - `GET /comments/{comment_id}/replies` (cursor pagination)
      - `DELETE /comments/{comment_id}` (hard delete)
      - `PATCH /comments/{comment_id}` (optional but recommended)
+     - `POST /comments/{comment_id}/like` (idempotent)
+     - `DELETE /comments/{comment_id}/like` (idempotent)
    - Add rate limiting to create/edit/delete as basic anti-spam.
    - Tests (high-signal):
      - validation (thread invariants)
      - pagination ordering and cursor correctness
-    - delete behavior (verify hard delete completes successfully)
+     - comment like/unlike idempotency + `like_count` updates
+      - delete behavior (verify hard delete completes successfully)
 
 5. Frontend Route + Skeleton UI
    - Add route: `/posts/:postId`
@@ -315,17 +347,21 @@ Recommended sequence to keep risk low and keep the app runnable at each step.
      - list replies for a top-level comment (cursor)
      - create comment/reply
      - delete (and optional edit)
+     - like/unlike comment
    - Use `useInfiniteQuery` for cursor pagination.
 
 7. Frontend Comments UI
    - Render top-level comments sorted by server order.
    - For each top-level comment:
-     - show first N replies (e.g., 3)
-     - “Load more replies” loads next pages
+     - show first N replies (e.g., 1)
+     - "Load more replies" loads next pages
    - Reply UX:
      - Reply to top-level: `parent_id = topCommentId`
      - Reply to reply: still `parent_id = topCommentId`, set `reply_to_*`
-     - Render “Name,” prefix when `reply_to_user` exists.
+     - Render вЂњName,вЂќ prefix when `reply_to_user` exists.
+   - Comment likes:
+     - like/unlike toggle
+     - optimistic updates on count and state
 
 8. Feed Preview Comment (Optional but Preferred)
    - Backend: add `top_comment_preview` to feed DTO to avoid N+1 fetches.
@@ -335,3 +371,4 @@ Recommended sequence to keep risk low and keep the app runnable at each step.
    - Ensure errors are readable and UX stays responsive.
    - Verify deterministic ordering and no deep nesting.
    - Verify rate limits behave reasonably (429 UX is acceptable).
+

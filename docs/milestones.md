@@ -155,7 +155,7 @@ Goal: backend contracts match the UI you’ve already started building.
 ## Milestone 3 — Deployable demo
 
 Recommended demo topology
-- Something not free to host all demos (all databases can be hosted in 1 thing)
+- Note: Some services may require paid plans. Consider platforms that can host multiple services to reduce costs.
 - Frontend: Vercel/Netlify (static SPA)
 - Backend: Render or Railway
 - DB: Supabase Postgres (free tier) or hosted Postgres on same platform
@@ -191,7 +191,6 @@ Definition of done
 
 ### D) Product features (only after MVP)
 - [ ] Comments
-- [ ] Media attachments
 - [ ] Notifications
 - [ ] Search
 
@@ -207,6 +206,6 @@ Rules
 - [ ] Safe fallback when AI unavailable
 
 ## Portfolio “20% extra” (pick 1–2 after MVP)
-- [ ] Following feed (use `follows` table; show “real” feed logic)
+- [ ] Following feed polish (improve ranking/ordering beyond the current subscriptions filter)
 - [ ] Rate limiting + structured error responses (429, problem details)
 - [ ] One AI endpoint behind a feature flag (with cost/safety notes)

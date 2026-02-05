@@ -106,7 +106,7 @@ export function PostCard({
     if (snippet) return `Post image: ${snippet}`;
     return `Post image by @${post.owner_username}`;
   })();
-  const draftTooLong = draft.trim().length > MAX_POST_LENGTH;
+  const draftTooLong = draft.length > MAX_POST_LENGTH;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -231,9 +231,9 @@ export function PostCard({
                   "text-xs tabular-nums",
                   draftTooLong ? "text-destructive" : "text-muted-foreground",
                 )}
-                aria-label={`Character count ${draft.trim().length} of ${MAX_POST_LENGTH}`}
+                aria-label={`Character count ${draft.length} of ${MAX_POST_LENGTH}`}
               >
-                {draft.trim().length}/{MAX_POST_LENGTH}
+                {draft.length}/{MAX_POST_LENGTH}
               </div>
               {draftTooLong ? (
                 <div className="text-destructive text-xs">

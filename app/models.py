@@ -100,6 +100,7 @@ class Post(Base):
         "Comment",
         back_populates="post",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
 
@@ -186,25 +187,19 @@ class Comment(Base):
         Index("ix_comments_reply_to_comment", "reply_to_comment_id"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     post_id = Column(
-        Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False
     )
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     parent_id = Column(
-        Integer,
-        ForeignKey("comments.id", ondelete="CASCADE"),
-        nullable=True,
-        index=True,
+        Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
     )
     reply_to_comment_id = Column(
-        Integer,
-        ForeignKey("comments.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
+        Integer, ForeignKey("comments.id", ondelete="SET NULL"), nullable=True
     )
     reply_to_user_id = Column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True

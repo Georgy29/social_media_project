@@ -36,7 +36,7 @@ export function CreatePost({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const trimmed = content.trim();
-  const overLimit = trimmed.length > MAX_POST_LENGTH;
+  const overLimit = content.length > MAX_POST_LENGTH;
   const isBusy = pending || uploading;
   const canSubmit = Boolean(trimmed) && !isBusy && !overLimit;
 
@@ -133,11 +133,11 @@ export function CreatePost({
             <div
               className={cn(
                 "text-muted-foreground text-xs tabular-nums",
-                trimmed.length >= MAX_POST_LENGTH ? "text-destructive" : "",
+                content.length >= MAX_POST_LENGTH ? "text-destructive" : "",
               )}
-              aria-label={`Character count ${trimmed.length} of ${MAX_POST_LENGTH}`}
+              aria-label={`Character count ${content.length} of ${MAX_POST_LENGTH}`}
             >
-              {trimmed.length}/{MAX_POST_LENGTH}
+              {content.length}/{MAX_POST_LENGTH}
             </div>
             <Button
               disabled={!canSubmit}

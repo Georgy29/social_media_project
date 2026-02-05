@@ -53,7 +53,6 @@ Single global sorting rule:
 - If mentions are implemented later, use entity-based mentions (not string parsing as the source of truth).
 
 ### Delete Behavior
-MVP can use hard delete or soft delete.
 - Decision: hard delete for MVP.
 
 ## Data Model (PostgreSQL)
@@ -110,8 +109,10 @@ Validation:
 - If `reply_to_comment_id` is provided:
   - Ensure it belongs to same `post_id` and same thread (`parent_id`).
   - Ensure `reply_to_user_id` matches the targeted comment author (or compute it server-side).
-- If `reply_to_comment_id` is not provided:
+- If `reply_to_comment_id` is not provided AND `parent_id` is provided:
   - Set `reply_to_user_id` to the top-level parent’s `user_id` (VK-style “Name,” prefix).
+- If `parent_id` is NULL (top-level comment):
+  - Ensure `reply_to_comment_id` and `reply_to_user_id` are both NULL (per constraint).
 
 Response:
 - Comment DTO including author snippet and reply_to user snippet.
@@ -213,6 +214,10 @@ Cursor format:
 - Input validation (trim, max length).
 - Avoid N+1 queries (join author in list endpoints).
 - Deterministic ordering guaranteed by the (`like_count`, `created_at`, `id`) triple.
+- Sanitize user input to prevent XSS (strip/escape HTML tags, JavaScript, and malicious content).
+- Escape content properly when rendering on the frontend.
+- Validate and sanitize URLs if markdown/links are supported.
+- Consider Content Security Policy (CSP) headers to mitigate XSS risks.
 
 ## Backend Implementation Checklist
 - Alembic migration for `comments` table (+ indexes).
@@ -222,7 +227,7 @@ Cursor format:
   - `POST /posts/{post_id}/comments`
   - `GET /posts/{post_id}/comments` (cursor)
   - `GET /comments/{comment_id}/replies` (cursor)
-  - `DELETE /comments/{comment_id}` (soft delete recommended)
+  - `DELETE /comments/{comment_id}` (hard delete for MVP)
   - `PATCH /comments/{comment_id}` (optional)
 - Cursor encode/decode utilities + unit tests for ordering and cursor correctness.
 - Feed query update to include `top_comment_preview` (optional but preferred).
@@ -248,7 +253,8 @@ Backend:
   - reply_to_comment must be in same post/thread
   - empty/whitespace content rejected
 - Delete behavior:
-  - soft deleted comment returns “Comment deleted” behavior in DTO (if implemented)
+  - deleted comments are removed entirely
+  - verify replies are handled appropriately (cascade or orphan prevention)
 
 Integration / E2E (optional):
 - Create top-level comment → appears in post detail
@@ -289,13 +295,13 @@ Recommended sequence to keep risk low and keep the app runnable at each step.
      - `POST /posts/{post_id}/comments` (create top-level or reply)
      - `GET /posts/{post_id}/comments` (cursor pagination, top-level only)
      - `GET /comments/{comment_id}/replies` (cursor pagination)
-     - `DELETE /comments/{comment_id}` (hard or soft)
+     - `DELETE /comments/{comment_id}` (hard delete)
      - `PATCH /comments/{comment_id}` (optional but recommended)
    - Add rate limiting to create/edit/delete as basic anti-spam.
    - Tests (high-signal):
      - validation (thread invariants)
      - pagination ordering and cursor correctness
-     - delete behavior (if soft delete, verify “deleted” rendering fields)
+    - delete behavior (verify hard delete completes successfully)
 
 5. Frontend Route + Skeleton UI
    - Add route: `/posts/:postId`

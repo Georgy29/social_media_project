@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import type { components } from "@/api/types";
 
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/date";
 import { getRouteScrollKey, rememberRouteScroll } from "@/lib/route-scroll";
 import { AnimatedCount } from "@/components/AnimatedCount";
 import { ProfileHoverCard } from "@/components/ProfileHoverCard";
@@ -80,10 +81,7 @@ export function PostCard({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const ts = new Date(post.timestamp);
-  const timeLabel = Number.isNaN(ts.valueOf())
-    ? post.timestamp
-    : ts.toLocaleString();
+  const timeLabel = formatDateTime(post.timestamp);
   const MAX_POST_LENGTH = 280;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.content);
@@ -122,12 +120,7 @@ export function PostCard({
     return `Post image by @${post.owner_username}`;
   })();
   const topCommentTimeLabel = post.top_comment_preview
-    ? (() => {
-        const created = new Date(post.top_comment_preview.created_at);
-        return Number.isNaN(created.valueOf())
-          ? post.top_comment_preview.created_at
-          : created.toLocaleString();
-      })()
+    ? formatDateTime(post.top_comment_preview.created_at)
     : null;
   const draftTooLong = draft.length > MAX_POST_LENGTH;
   const isTimeline = styleMode === "timeline";
@@ -445,9 +438,7 @@ export function PostCard({
                 size="xs"
                 variant="ghost"
                 aria-pressed={retweetState.retweeted}
-                aria-label={
-                  retweetState.retweeted ? "Repost menu" : "Repost menu"
-                }
+                aria-label={retweetState.retweeted ? "Undo repost" : "Repost"}
                 title={retweetState.retweeted ? "Undo repost" : "Repost"}
                 className={actionButtonClass}
               >

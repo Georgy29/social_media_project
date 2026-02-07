@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -6,14 +7,23 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import FeedPage from "@/pages/Feed";
-import BookmarksPage from "@/pages/Bookmarks";
-import LoginPage from "@/pages/Login";
-import PostDetailPage from "@/pages/PostDetail";
-import ProfilePage from "@/pages/Profile";
-import RegisterPage from "@/pages/Register";
 import { getToken, type ApiError } from "@/api/client";
 import { useMeQuery } from "@/api/queries";
+
+const FeedPage = lazy(() => import("@/pages/Feed"));
+const BookmarksPage = lazy(() => import("@/pages/Bookmarks"));
+const LoginPage = lazy(() => import("@/pages/Login"));
+const PostDetailPage = lazy(() => import("@/pages/PostDetail"));
+const ProfilePage = lazy(() => import("@/pages/Profile"));
+const RegisterPage = lazy(() => import("@/pages/Register"));
+
+function FullPageStatus({ message }: { message: string }) {
+  return (
+    <div className="text-muted-foreground flex min-h-svh items-center justify-center">
+      {message}
+    </div>
+  );
+}
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -25,11 +35,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   }
 
   if (meQuery.isPending) {
-    return (
-      <div className="text-muted-foreground flex min-h-svh items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <FullPageStatus message="Loading..." />;
   }
 
   if (meQuery.isError) {
@@ -38,9 +44,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
       return <Navigate to="/login" replace state={{ from: location }} />;
     }
     return (
-      <div className="text-muted-foreground flex min-h-svh items-center justify-center">
-        {error.message}
-      </div>
+      <FullPageStatus message={error.message} />
     );
   }
 
@@ -54,11 +58,7 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
   if (!token) return <>{children}</>;
 
   if (meQuery.isPending) {
-    return (
-      <div className="text-muted-foreground flex min-h-svh items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <FullPageStatus message="Loading..." />;
   }
 
   if (meQuery.data) {
@@ -73,58 +73,62 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/feed" replace />} />
-        <Route
-          path="/login"
-          element={
-            <RequireGuest>
-              <LoginPage />
-            </RequireGuest>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <RequireGuest>
-              <RegisterPage />
-            </RequireGuest>
-          }
-        />
-        <Route
-          path="/feed"
-          element={
-            <RequireAuth>
-              <FeedPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/bookmarks"
-          element={
-            <RequireAuth>
-              <BookmarksPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/posts/:postId"
-          element={
-            <RequireAuth>
-              <PostDetailPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/profile/:username"
-          element={
-            <RequireAuth>
-              <ProfilePage />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/feed" replace />} />
-      </Routes>
+      <Suspense
+        fallback={<FullPageStatus message="Loading..." />}
+      >
+        <Routes>
+          <Route path="/" element={<Navigate to="/feed" replace />} />
+          <Route
+            path="/login"
+            element={
+              <RequireGuest>
+                <LoginPage />
+              </RequireGuest>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <RequireGuest>
+                <RegisterPage />
+              </RequireGuest>
+            }
+          />
+          <Route
+            path="/feed"
+            element={
+              <RequireAuth>
+                <FeedPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/bookmarks"
+            element={
+              <RequireAuth>
+                <BookmarksPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/posts/:postId"
+            element={
+              <RequireAuth>
+                <PostDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/profile/:username"
+            element={
+              <RequireAuth>
+                <ProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<Navigate to="/feed" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

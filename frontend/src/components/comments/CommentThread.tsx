@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDateTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
 type CommentResponse = components["schemas"]["CommentResponse"];
@@ -135,7 +136,7 @@ function CommentItem({
           </Link>
         </ProfileHoverCard>
         <div className="text-muted-foreground text-xs shrink-0">
-          {new Date(comment.created_at).toLocaleString()}
+          {formatDateTime(comment.created_at)}
         </div>
       </div>
 

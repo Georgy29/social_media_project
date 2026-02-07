@@ -13,6 +13,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserTimelineQuery } from "@/api/queries";
+import { formatDateTime } from "@/lib/date";
 
 type ProfileTimelineSectionProps = {
   username?: string;
@@ -104,7 +105,7 @@ export function ProfileTimelineSection({
             <div className="space-y-4">
               {filteredTimeline.map((item) => {
                 const repostedLabel = item.reposted_at
-                  ? new Date(item.reposted_at).toLocaleString()
+                  ? formatDateTime(item.reposted_at)
                   : null;
                 return (
                   <div

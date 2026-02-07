@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { type ApiError } from "@/api/client";
+import { formatDate } from "@/lib/date";
 import { getRouteScrollKey, restoreRouteScroll } from "@/lib/route-scroll";
 import {
   useCreatePostMutation,
@@ -55,12 +56,7 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
 
   const profile = profileQuery.data;
-  const joinedLabel = (() => {
-    if (!profile?.created_at) return null;
-    const ts = new Date(profile.created_at);
-    if (Number.isNaN(ts.valueOf())) return null;
-    return ts.toLocaleDateString();
-  })();
+  const joinedLabel = profile?.created_at ? formatDate(profile.created_at) : null;
   const isOwner = Boolean(
     profile?.username && meQuery.data?.username === profile.username,
   );

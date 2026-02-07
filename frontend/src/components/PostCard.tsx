@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   IconBookmark,
   IconBookmarkFilled,
@@ -7,6 +7,7 @@ import {
   IconEdit,
   IconHeart,
   IconHeartFilled,
+  IconMessageCircle,
   IconRepeat,
   IconTrash,
 } from "@tabler/icons-react";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 import type { components } from "@/api/types";
 
 import { cn } from "@/lib/utils";
+import { getRouteScrollKey, rememberRouteScroll } from "@/lib/route-scroll";
 import { ProfileHoverCard } from "@/components/ProfileHoverCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -53,10 +56,18 @@ export function PostCard({
   onUpdate,
   isOwner = false,
   pending = false,
+  showCommentPreview = false,
+  enableOpen = true,
+  onCommentClick,
+  styleMode = "card",
 }: {
   post: PostWithCounts;
   pending?: boolean;
   isOwner?: boolean;
+  showCommentPreview?: boolean;
+  enableOpen?: boolean;
+  onCommentClick?: () => void;
+  styleMode?: "card" | "timeline";
   onToggleLike: (post: PostWithCounts) => void;
   onToggleRetweet: (post: PostWithCounts) => void;
   onToggleBookmark?: (
@@ -66,6 +77,8 @@ export function PostCard({
   onDelete?: (postId: number) => Promise<void>;
   onUpdate?: (postId: number, content: string) => Promise<unknown>;
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const ts = new Date(post.timestamp);
   const timeLabel = Number.isNaN(ts.valueOf())
     ? post.timestamp
@@ -101,12 +114,14 @@ export function PostCard({
   const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase();
   const avatarUrl = post.owner_avatar_url ?? null;
   const profilePath = `/profile/${encodeURIComponent(post.owner_username)}`;
+  const postDetailPath = `/posts/${post.id}`;
   const mediaAlt = (() => {
     const snippet = post.content.trim().replace(/\s+/g, " ").slice(0, 80);
     if (snippet) return `Post image: ${snippet}`;
     return `Post image by @${post.owner_username}`;
   })();
   const draftTooLong = draft.length > MAX_POST_LENGTH;
+  const isTimeline = styleMode === "timeline";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -186,9 +201,77 @@ export function PostCard({
     }
   };
 
+  const openPostDetail = (options?: { focusCommentComposer?: boolean }) => {
+    if (!enableOpen || editing) return;
+    const fromRoute = getRouteScrollKey(location.pathname, location.search);
+    rememberRouteScroll(fromRoute);
+    navigate(postDetailPath, {
+      state: {
+        from: fromRoute,
+        focusCommentComposer: Boolean(options?.focusCommentComposer),
+      },
+    });
+  };
+
+  const isInteractiveTarget = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return false;
+    return Boolean(
+      target.closest(
+        "a,button,input,textarea,select,label,[role='button'],[role='menuitem'],[data-no-post-open='true']",
+      ),
+    );
+  };
+
+  const openComments = () => {
+    if (onCommentClick) {
+      onCommentClick();
+      return;
+    }
+    openPostDetail({ focusCommentComposer: true });
+  };
+
+  const actionButtonClass = cn(
+    "min-w-11 justify-center gap-1.5 rounded-md border border-border/70 bg-background hover:bg-muted/60",
+    isTimeline ? "h-7 px-1.5" : "h-8 px-2",
+  );
+  const timelineCardClass =
+    "rounded-none ring-0 bg-transparent py-2 gap-0 data-[size=sm]:gap-0 border-t border-b border-border/70 first:border-t-0 last:border-b-0";
+  const timelineContentClass = "px-3 pt-3 pb-3 space-y-5";
+  const timelineFooterClass =
+    "bg-muted/20 border-t border-border/60 rounded-none gap-1.5 px-3 py-1.5";
+  const timelineTopCommentClass =
+    "rounded-none bg-muted/30 px-4 py-1.5 hover:bg-muted/50";
+
   return (
-    <Card>
-      <CardHeader className="space-y-1">
+    <Card
+      size={isTimeline ? "sm" : "default"}
+      role={enableOpen ? "link" : undefined}
+      tabIndex={enableOpen ? 0 : undefined}
+      aria-label={`Open post ${post.id}`}
+      className={cn(
+        "transition-colors",
+        isTimeline ? timelineCardClass : "",
+        editing || !enableOpen
+          ? ""
+          : isTimeline
+            ? "cursor-pointer hover:bg-muted/30"
+            : "cursor-pointer hover:bg-muted/10",
+      )}
+      onClick={(event) => {
+        if (!enableOpen) return;
+        if (isInteractiveTarget(event.target)) return;
+        openPostDetail();
+      }}
+      onKeyDown={(event) => {
+        if (!enableOpen) return;
+        if (isInteractiveTarget(event.target)) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openPostDetail();
+        }
+      }}
+    >
+      <CardHeader className={cn("space-y-1", isTimeline ? "px-3" : "")}>
         <div className="flex items-center justify-between gap-3">
           <ProfileHoverCard
             username={post.owner_username}
@@ -214,7 +297,12 @@ export function PostCard({
           <div className="text-muted-foreground text-xs">{timeLabel}</div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent
+        className={cn(
+          "space-y-3",
+          isTimeline ? timelineContentClass : "",
+        )}
+      >
         {editing ? (
           <div className="space-y-2">
             <Textarea
@@ -276,7 +364,14 @@ export function PostCard({
             </div>
           </div>
         ) : (
-          <div className="whitespace-pre-wrap break-words">{post.content}</div>
+          <div
+            className={cn(
+              "whitespace-pre-wrap break-words leading-6",
+              isTimeline ? "pl-2" : "",
+            )}
+          >
+            {post.content}
+          </div>
         )}
         {post.media_url ? (
           <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20">
@@ -293,14 +388,20 @@ export function PostCard({
         ) : null}
         {error ? <div className="text-destructive text-sm">{error}</div> : null}
       </CardContent>
-      <CardFooter className="flex items-center gap-2 px-3 py-2">
-        <div className="flex items-center gap-2">
+      <CardFooter
+        className={cn(
+          "flex items-center gap-2 px-3 py-2",
+          isTimeline ? timelineFooterClass : "",
+        )}
+      >
+        <div className="flex items-center gap-1">
           <Button
             size="xs"
             variant="outline"
             aria-pressed={likeState.liked}
             aria-label={likeState.liked ? "Unlike post" : "Like post"}
-            className="gap-2"
+            title={likeState.liked ? "Unlike" : "Like"}
+            className={actionButtonClass}
             onClick={handleToggleLike}
           >
             <span
@@ -333,7 +434,8 @@ export function PostCard({
                 aria-label={
                   retweetState.retweeted ? "Repost menu" : "Repost menu"
                 }
-                className="gap-2"
+                title={retweetState.retweeted ? "Undo repost" : "Repost"}
+                className={actionButtonClass}
               >
                 <span
                   key={retweetPulseKey}
@@ -375,7 +477,8 @@ export function PostCard({
             variant="outline"
             aria-pressed={bookmarked}
             aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
-            className="gap-2"
+            title={bookmarked ? "Remove bookmark" : "Add bookmark"}
+            className={actionButtonClass}
             onClick={handleToggleBookmark}
           >
             {bookmarked ? (
@@ -383,6 +486,26 @@ export function PostCard({
             ) : (
               <IconBookmark className="text-muted-foreground" />
             )}
+          </Button>
+          <Button
+            size="xs"
+            variant="outline"
+            className={cn(
+              "min-w-[88px] justify-center gap-1.5 rounded-md border border-border/70 bg-background hover:bg-muted/60",
+              isTimeline ? "h-7 px-1.5" : "h-8 px-2",
+            )}
+            title="Comment"
+            onClick={() => {
+              if (onCommentClick) {
+                onCommentClick();
+                return;
+              }
+              openPostDetail({ focusCommentComposer: true });
+            }}
+            aria-label={`Open post ${post.id} comments`}
+          >
+            <IconMessageCircle />
+            Comment
           </Button>
         </div>
         {isOwner ? (
@@ -393,6 +516,7 @@ export function PostCard({
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Post actions"
+                  title="More"
                   disabled={pending}
                 >
                   <IconDotsVertical className="h-4 w-4" aria-hidden="true" />
@@ -423,6 +547,73 @@ export function PostCard({
           </div>
         ) : null}
       </CardFooter>
+      {isTimeline ? <Separator className="bg-border/60" /> : null}
+      {showCommentPreview && post.top_comment_preview ? (
+        <div
+          className={cn(
+            "transition-colors duration-150 cursor-pointer",
+            isTimeline
+              ? timelineTopCommentClass
+              : "rounded-lg border border-border/50 bg-muted/15 px-3 py-2 hover:bg-muted/30",
+          )}
+          role="button"
+          tabIndex={0}
+          onClick={(event) => {
+            if (!(event.target instanceof HTMLElement)) return;
+            if (event.target.closest("a")) return;
+            event.stopPropagation();
+            openComments();
+          }}
+          onKeyDown={(event) => {
+            if (!(event.target instanceof HTMLElement)) return;
+            if (event.target.closest("a")) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              openComments();
+            }
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <ProfileHoverCard
+                username={post.top_comment_preview.user.username}
+                userId={post.top_comment_preview.user.id}
+                avatarUrl={post.top_comment_preview.user.avatar_url ?? null}
+              >
+                <Link
+                  to={`/profile/${encodeURIComponent(post.top_comment_preview.user.username)}`}
+                  className="inline-flex max-w-full items-center gap-2 text-sm font-semibold"
+                  aria-label={`Open profile card for @${post.top_comment_preview.user.username}`}
+                >
+                  <Avatar className="size-7">
+                    {post.top_comment_preview.user.avatar_url ? (
+                      <AvatarImage
+                        src={post.top_comment_preview.user.avatar_url}
+                        alt={post.top_comment_preview.user.username}
+                      />
+                    ) : null}
+                    <AvatarFallback className="text-[10px] font-semibold">
+                      {(post.top_comment_preview.user.username || "?")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  @{post.top_comment_preview.user.username}
+                </Link>
+              </ProfileHoverCard>
+              <div className="mt-0.5 pl-9 text-sm leading-5 break-words">
+                {post.top_comment_preview.content}
+              </div>
+              <div className="mt-0.5 pl-9 flex justify-end">
+                <div className="text-muted-foreground/90 text-xs">
+                  {post.top_comment_preview.like_count} likes
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {onDelete ? (
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogContent size="sm">

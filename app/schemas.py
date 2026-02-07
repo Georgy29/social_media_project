@@ -172,6 +172,10 @@ class CommentCreate(CommentBase):
     reply_to_user_id: Optional[int] = None
 
 
+class CommentUpdate(CommentBase):
+    pass
+
+
 class CommentResponse(BaseModel):
     id: int
     post_id: int

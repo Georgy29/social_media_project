@@ -65,6 +65,12 @@ class User(Base):
         cascade="all, delete-orphan",
         foreign_keys="Comment.user_id",
     )
+    comment_likes = relationship(
+        "CommentLike",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="CommentLike.user_id",
+    )
 
 
 class Post(Base):
@@ -226,3 +232,24 @@ class Comment(Base):
         "Comment", remote_side=[id], foreign_keys=[reply_to_comment_id]
     )
     reply_to_user = relationship("User", foreign_keys=[reply_to_user_id])
+    comment_likes = relationship(
+        "CommentLike",
+        back_populates="comment",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class CommentLike(Base):
+    __tablename__ = "comment_likes"
+
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    comment_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="comment_likes")
+    comment = relationship("Comment", back_populates="comment_likes")

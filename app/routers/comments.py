@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import and_, or_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, aliased
 
 from .. import auth, exceptions, models, schemas
@@ -73,6 +74,13 @@ def _ensure_reply_target(
     return target_user_id, target.id
 
 
+def _get_comment_or_404(db: Session, comment_id: int) -> models.Comment:
+    comment = db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+    if not comment:
+        exceptions.raise_not_found_exception("Comment not found")
+    return comment
+
+
 @router.post("/posts/{post_id}/comments", response_model=schemas.CommentResponse)
 @limiter.limit("30/minute")
 def create_comment(
@@ -117,6 +125,63 @@ def create_comment(
         reply_to_user_id=reply_to_user_id,
         content=content,
     )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+
+    reply_to_user = (
+        db.query(models.User).filter(models.User.id == comment.reply_to_user_id).first()
+        if comment.reply_to_user_id
+        else None
+    )
+
+    return schemas.CommentResponse(
+        id=comment.id,
+        post_id=comment.post_id,
+        user=schemas.UserPreview(
+            id=current_user.id,
+            username=current_user.username,
+            avatar_url=current_user.avatar_media.public_url
+            if current_user.avatar_media
+            else None,
+            bio=current_user.bio,
+        ),
+        parent_id=comment.parent_id,
+        reply_to_comment_id=comment.reply_to_comment_id,
+        reply_to_user=(
+            schemas.UserPreview(
+                id=reply_to_user.id,
+                username=reply_to_user.username,
+                avatar_url=reply_to_user.avatar_media.public_url
+                if reply_to_user.avatar_media
+                else None,
+                bio=reply_to_user.bio,
+            )
+            if reply_to_user
+            else None
+        ),
+        content=comment.content,
+        like_count=comment.like_count,
+        created_at=comment.created_at,
+        updated_at=comment.updated_at,
+    )
+
+
+@router.patch("/comments/{comment_id}", response_model=schemas.CommentResponse)
+@limiter.limit("30/minute")
+def update_comment(
+    request: Request,
+    comment_id: int,
+    payload: schemas.CommentUpdate,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    comment = _get_comment_or_404(db, comment_id)
+
+    if comment.user_id != current_user.id:
+        exceptions.raise_forbidden_exception("Not authorized to edit this comment")
+
+    comment.content = _trimmed_or_error(payload.content)
     db.add(comment)
     db.commit()
     db.refresh(comment)
@@ -336,6 +401,63 @@ def list_replies(
     return schemas.CommentListResponse(items=items, next_cursor=next_cursor)
 
 
+@router.post("/comments/{comment_id}/like", status_code=204)
+@limiter.limit("120/minute")
+def like_comment(
+    request: Request,
+    comment_id: int,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    _get_comment_or_404(db, comment_id)
+
+    insert_stmt = (
+        insert(models.CommentLike)
+        .values(user_id=current_user.id, comment_id=comment_id)
+        .on_conflict_do_nothing(index_elements=["user_id", "comment_id"])
+        .returning(models.CommentLike.user_id)
+    )
+    inserted_user_id = db.execute(insert_stmt).scalar_one_or_none()
+
+    if inserted_user_id is not None:
+        db.query(models.Comment).filter(models.Comment.id == comment_id).update(
+            {models.Comment.like_count: models.Comment.like_count + 1},
+            synchronize_session=False,
+        )
+
+    db.commit()
+
+    return
+
+
+@router.delete("/comments/{comment_id}/like", status_code=204)
+@limiter.limit("120/minute")
+def unlike_comment(
+    request: Request,
+    comment_id: int,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    _get_comment_or_404(db, comment_id)
+
+    deleted = (
+        db.query(models.CommentLike)
+        .filter_by(user_id=current_user.id, comment_id=comment_id)
+        .delete(synchronize_session=False)
+    )
+
+    if deleted:
+        db.query(models.Comment).filter(
+            models.Comment.id == comment_id, models.Comment.like_count > 0
+        ).update(
+            {models.Comment.like_count: models.Comment.like_count - 1},
+            synchronize_session=False,
+        )
+
+    db.commit()
+    return
+
+
 @router.delete("/comments/{comment_id}", status_code=204)
 @limiter.limit("20/minute")
 def delete_comment(
@@ -344,9 +466,7 @@ def delete_comment(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    comment = db.query(models.Comment).filter(models.Comment.id == comment_id).first()
-    if not comment:
-        exceptions.raise_not_found_exception("Comment not found")
+    comment = _get_comment_or_404(db, comment_id)
 
     is_owner = comment.user_id == current_user.id
     is_admin = getattr(current_user, "is_admin", False)

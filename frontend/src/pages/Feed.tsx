@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { CreatePost } from "@/components/CreatePost";
@@ -19,6 +19,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { type ApiError } from "@/api/client";
+import { getRouteScrollKey, restoreRouteScroll } from "@/lib/route-scroll";
 import {
   useCreatePostMutation,
   useDeletePostMutation,
@@ -35,8 +36,10 @@ type FeedView = "public" | "subscriptions";
 
 export default function FeedPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const logout = useLogout();
   const meQuery = useMeQuery();
+  const restoredRouteRef = useRef<string | null>(null);
 
   const [page, setPage] = useState(0);
   const [feedView, setFeedView] = useState<FeedView>("public");
@@ -63,6 +66,13 @@ export default function FeedPage() {
   const profilePath = meQuery.data?.username
     ? `/profile/${meQuery.data.username}`
     : "/feed";
+  const routeKey = getRouteScrollKey(location.pathname, location.search);
+
+  useEffect(() => {
+    if (restoredRouteRef.current === routeKey) return;
+    restoredRouteRef.current = routeKey;
+    restoreRouteScroll(routeKey);
+  }, [routeKey]);
 
   const isRefreshing = feedQuery.isFetching && feedQuery.isPlaceholderData;
 
@@ -254,11 +264,13 @@ export default function FeedPage() {
               </Button>
             </div>
           ) : feedQuery.data.length ? (
-            <div className="space-y-3">
+            <div className="ring-foreground/10 overflow-hidden rounded-xl bg-card ring-1">
               {feedQuery.data.map((post) => (
                 <PostCard
                   key={post.id}
                   post={post}
+                  styleMode="timeline"
+                  showCommentPreview
                   pending={isPostMutating(post.id)}
                   isOwner={meQuery.data?.id === post.owner_id}
                   onToggleLike={handleToggleLike}

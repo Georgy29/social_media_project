@@ -50,6 +50,14 @@ class UserPreview(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PostTopCommentPreview(BaseModel):
+    id: int
+    content: str
+    like_count: int
+    created_at: datetime
+    user: UserPreview
+
+
 class MutualsPreview(BaseModel):
     mutual_count: int
     mutual_preview: List[UserPreview]
@@ -101,6 +109,7 @@ class PostWithCounts(Post):
     is_retweeted: bool
     is_bookmarked: bool
     media_url: Optional[str] = None
+    top_comment_preview: Optional[PostTopCommentPreview] = None
 
 
 class TimelineItem(BaseModel):
@@ -185,6 +194,7 @@ class CommentResponse(BaseModel):
     reply_to_user: Optional[UserPreview] = None
     content: str
     like_count: int
+    is_liked: bool = False
     created_at: datetime
     updated_at: datetime
 

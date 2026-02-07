@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, List, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
 from .. import auth, exceptions, models, schemas
@@ -20,6 +20,8 @@ POST_MAX_LENGTH = 280
 
 def _build_posts_with_counts_query(db: Session, current_user: models.User):
     avatar_media = aliased(models.Media)
+    top_comment_user = aliased(models.User)
+    top_comment_avatar_media = aliased(models.Media)
 
     likes_subq = (
         db.query(models.Like.post_id, func.count(models.Like.user_id).label("likes_count"))
@@ -54,6 +56,29 @@ def _build_posts_with_counts_query(db: Session, current_user: models.User):
         .subquery()
     )
 
+    ranked_top_comments_subq = (
+        db.query(
+            models.Comment.id.label("comment_id"),
+            models.Comment.post_id.label("post_id"),
+            models.Comment.user_id.label("comment_user_id"),
+            models.Comment.content.label("comment_content"),
+            models.Comment.like_count.label("comment_like_count"),
+            models.Comment.created_at.label("comment_created_at"),
+            func.row_number()
+            .over(
+                partition_by=models.Comment.post_id,
+                order_by=(
+                    models.Comment.like_count.desc(),
+                    models.Comment.created_at.asc(),
+                    models.Comment.id.asc(),
+                ),
+            )
+            .label("comment_rank"),
+        )
+        .filter(models.Comment.parent_id.is_(None))
+        .subquery()
+    )
+
     return (
         db.query(
             models.Post,
@@ -65,6 +90,18 @@ def _build_posts_with_counts_query(db: Session, current_user: models.User):
             retweeted_by_me_subq.c.post_id.isnot(None).label("is_retweeted"),
             bookmarked_by_me_subq.c.post_id.isnot(None).label("is_bookmarked"),
             models.Media.public_url.label("media_url"),
+            ranked_top_comments_subq.c.comment_id.label("top_comment_id"),
+            ranked_top_comments_subq.c.comment_content.label("top_comment_content"),
+            ranked_top_comments_subq.c.comment_like_count.label(
+                "top_comment_like_count"
+            ),
+            ranked_top_comments_subq.c.comment_created_at.label(
+                "top_comment_created_at"
+            ),
+            top_comment_user.id.label("top_comment_user_id"),
+            top_comment_user.username.label("top_comment_username"),
+            top_comment_avatar_media.public_url.label("top_comment_user_avatar_url"),
+            top_comment_user.bio.label("top_comment_user_bio"),
         )
         .join(models.User, models.Post.owner_id == models.User.id)
         .outerjoin(models.Media, models.Post.media_id == models.Media.id)
@@ -78,6 +115,21 @@ def _build_posts_with_counts_query(db: Session, current_user: models.User):
         .outerjoin(
             bookmarked_by_me_subq,
             models.Post.id == bookmarked_by_me_subq.c.post_id,
+        )
+        .outerjoin(
+            ranked_top_comments_subq,
+            and_(
+                ranked_top_comments_subq.c.post_id == models.Post.id,
+                ranked_top_comments_subq.c.comment_rank == 1,
+            ),
+        )
+        .outerjoin(
+            top_comment_user,
+            ranked_top_comments_subq.c.comment_user_id == top_comment_user.id,
+        )
+        .outerjoin(
+            top_comment_avatar_media,
+            top_comment_user.avatar_media_id == top_comment_avatar_media.id,
         )
     )
 
@@ -93,7 +145,31 @@ def _to_post_with_counts(row) -> schemas.PostWithCounts:
         is_retweeted,
         is_bookmarked,
         media_url,
+        top_comment_id,
+        top_comment_content,
+        top_comment_like_count,
+        top_comment_created_at,
+        top_comment_user_id,
+        top_comment_username,
+        top_comment_user_avatar_url,
+        top_comment_user_bio,
     ) = row
+
+    top_comment_preview = None
+    if top_comment_id is not None and top_comment_user_id is not None:
+        top_comment_preview = schemas.PostTopCommentPreview(
+            id=top_comment_id,
+            content=top_comment_content,
+            like_count=top_comment_like_count,
+            created_at=top_comment_created_at,
+            user=schemas.UserPreview(
+                id=top_comment_user_id,
+                username=top_comment_username,
+                avatar_url=top_comment_user_avatar_url,
+                bio=top_comment_user_bio,
+            ),
+        )
+
     return schemas.PostWithCounts(
         id=post.id,
         content=post.content,
@@ -107,6 +183,7 @@ def _to_post_with_counts(row) -> schemas.PostWithCounts:
         is_retweeted=is_retweeted,
         is_bookmarked=is_bookmarked,
         media_url=media_url,
+        top_comment_preview=top_comment_preview,
     )
 
 

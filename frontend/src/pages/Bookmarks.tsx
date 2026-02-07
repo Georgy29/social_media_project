@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PostComposerDialog } from "@/components/PostComposerDialog";
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
 import { type ApiError } from "@/api/client";
+import { getRouteScrollKey, restoreRouteScroll } from "@/lib/route-scroll";
 import {
   useBookmarksQuery,
   useCreatePostMutation,
@@ -31,8 +32,10 @@ import {
 
 export default function BookmarksPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const logout = useLogout();
   const meQuery = useMeQuery();
+  const restoredRouteRef = useRef<string | null>(null);
 
   const [page, setPage] = useState(0);
   const limit = 10;
@@ -55,6 +58,13 @@ export default function BookmarksPage() {
   const profilePath = meQuery.data?.username
     ? `/profile/${meQuery.data.username}`
     : "/feed";
+  const routeKey = getRouteScrollKey(location.pathname, location.search);
+
+  useEffect(() => {
+    if (restoredRouteRef.current === routeKey) return;
+    restoredRouteRef.current = routeKey;
+    restoreRouteScroll(routeKey);
+  }, [routeKey]);
 
   const isRefreshing =
     bookmarksQuery.isFetching && bookmarksQuery.isPlaceholderData;

@@ -571,6 +571,11 @@ export interface components {
             /** Like Count */
             like_count: number;
             /**
+             * Is Liked
+             * @default false
+             */
+            is_liked: boolean;
+            /**
              * Created At
              * Format: date-time
              */
@@ -656,6 +661,21 @@ export interface components {
             /** Media Id */
             media_id?: number | null;
         };
+        /** PostTopCommentPreview */
+        PostTopCommentPreview: {
+            /** Id */
+            id: number;
+            /** Content */
+            content: string;
+            /** Like Count */
+            like_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            user: components["schemas"]["UserPreview"];
+        };
         /** PostUpdate */
         PostUpdate: {
             /** Content */
@@ -690,6 +710,7 @@ export interface components {
             is_bookmarked: boolean;
             /** Media Url */
             media_url?: string | null;
+            top_comment_preview?: components["schemas"]["PostTopCommentPreview"] | null;
         };
         /** SuggestionsResponse */
         SuggestionsResponse: {

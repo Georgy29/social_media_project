@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { IconArrowLeft } from "@tabler/icons-react";
 
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { type ApiError } from "@/api/client";
+import { getRouteScrollKey, restoreRouteScroll } from "@/lib/route-scroll";
 import {
   useCreatePostMutation,
   useDeletePostMutation,
@@ -37,9 +38,11 @@ import {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const logout = useLogout();
   const { username } = useParams();
   const meQuery = useMeQuery();
+  const restoredRouteRef = useRef<string | null>(null);
   const profileQuery = useUserProfileQuery(username);
   const createPostMutation = useCreatePostMutation();
   const updatePostMutation = useUpdatePostMutation();
@@ -73,6 +76,13 @@ export default function ProfilePage() {
     avatarAlt: "Your avatar",
     avatarFallback: "ME",
   });
+  const routeKey = getRouteScrollKey(location.pathname, location.search);
+
+  useEffect(() => {
+    if (restoredRouteRef.current === routeKey) return;
+    restoredRouteRef.current = routeKey;
+    restoreRouteScroll(routeKey);
+  }, [routeKey]);
 
   const handleLogout = () => {
     logout();

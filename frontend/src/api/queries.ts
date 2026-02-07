@@ -1,5 +1,8 @@
 import {
   keepPreviousData,
+  type InfiniteData,
+  type QueryKey,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -81,6 +84,8 @@ type CommentsQuery =
   operations["list_top_level_comments_posts__post_id__comments_get"]["parameters"]["query"];
 type RepliesQuery =
   operations["list_replies_comments__comment_id__replies_get"]["parameters"]["query"];
+type CommentsListParams = Omit<CommentsQuery, "cursor">;
+type RepliesListParams = Omit<RepliesQuery, "cursor">;
 
 export const queryKeys = {
   me: ["me"] as const,
@@ -117,16 +122,43 @@ export const queryKeys = {
   comments: {
     root: ["comments"] as const,
     detail: (postId: number) => ["comments", postId] as const,
-    list: (postId: number, params: CommentsQuery) =>
+    list: (postId: number, params: CommentsListParams) =>
       ["comments", postId, params] as const,
   },
   replies: {
     root: ["replies"] as const,
     detail: (commentId: number) => ["replies", commentId] as const,
-    list: (commentId: number, params: RepliesQuery) =>
+    list: (commentId: number, params: RepliesListParams) =>
       ["replies", commentId, params] as const,
   },
 } as const;
+
+function updateCommentInInfiniteData(
+  data: InfiniteData<CommentListResponse> | undefined,
+  commentId: number,
+  isLiked: boolean,
+) {
+  if (!data) return data;
+
+  return {
+    ...data,
+    pages: data.pages.map((page) => ({
+      ...page,
+      items: page.items.map((item) => {
+        if (item.id !== commentId) return item;
+        const nextIsLiked = !isLiked;
+        const nextLikeCount = isLiked
+          ? Math.max(item.like_count - 1, 0)
+          : item.like_count + 1;
+        return {
+          ...item,
+          is_liked: nextIsLiked,
+          like_count: nextLikeCount,
+        };
+      }),
+    })),
+  };
+}
 
 export function useMeQuery() {
   const queryClient = useQueryClient();
@@ -231,22 +263,32 @@ export function useBookmarksQuery(params: BookmarksQuery = {}) {
 
 export function useTopLevelCommentsQuery(
   postId?: number,
-  params: CommentsQuery = {},
+  params: CommentsListParams = {},
 ) {
-  return useQuery<CommentListResponse, ApiError>({
+  return useInfiniteQuery<CommentListResponse, ApiError>({
     queryKey: queryKeys.comments.list(postId ?? 0, params),
-    queryFn: () => listTopLevelComments(postId ?? 0, params),
+    queryFn: ({ pageParam }) =>
+      listTopLevelComments(postId ?? 0, {
+        ...params,
+        cursor: typeof pageParam === "string" ? pageParam : undefined,
+      }),
     enabled: typeof postId === "number",
-    placeholderData: keepPreviousData,
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
   });
 }
 
-export function useRepliesQuery(commentId?: number, params: RepliesQuery = {}) {
-  return useQuery<CommentListResponse, ApiError>({
+export function useRepliesQuery(commentId?: number, params: RepliesListParams = {}) {
+  return useInfiniteQuery<CommentListResponse, ApiError>({
     queryKey: queryKeys.replies.list(commentId ?? 0, params),
-    queryFn: () => listReplies(commentId ?? 0, params),
+    queryFn: ({ pageParam }) =>
+      listReplies(commentId ?? 0, {
+        ...params,
+        cursor: typeof pageParam === "string" ? pageParam : undefined,
+      }),
     enabled: typeof commentId === "number",
-    placeholderData: keepPreviousData,
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
   });
 }
 
@@ -479,6 +521,10 @@ export function useToggleCommentLikeMutation() {
       postId: number;
       parentId?: number | null;
       isLiked: boolean;
+    },
+    {
+      previousComments: [QueryKey, InfiniteData<CommentListResponse> | undefined][];
+      previousReplies: [QueryKey, InfiniteData<CommentListResponse> | undefined][];
     }
   >({
     mutationFn: async ({ commentId, isLiked }) => {
@@ -488,7 +534,68 @@ export function useToggleCommentLikeMutation() {
         await likeComment(commentId);
       }
     },
-    onSuccess: (_data, variables) => {
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.comments.detail(variables.postId),
+      });
+
+      const previousComments =
+        queryClient.getQueriesData<InfiniteData<CommentListResponse>>({
+          queryKey: queryKeys.comments.detail(variables.postId),
+        });
+
+      for (const [key] of previousComments) {
+        queryClient.setQueryData<InfiniteData<CommentListResponse>>(key, (oldData) =>
+          updateCommentInInfiniteData(
+            oldData,
+            variables.commentId,
+            variables.isLiked,
+          ),
+        );
+      }
+
+      let previousReplies: [
+        QueryKey,
+        InfiniteData<CommentListResponse> | undefined,
+      ][] = [];
+      if (variables.parentId != null) {
+        await queryClient.cancelQueries({
+          queryKey: queryKeys.replies.detail(variables.parentId),
+        });
+        previousReplies =
+          queryClient.getQueriesData<InfiniteData<CommentListResponse>>({
+            queryKey: queryKeys.replies.detail(variables.parentId),
+          });
+
+        for (const [key] of previousReplies) {
+          queryClient.setQueryData<InfiniteData<CommentListResponse>>(
+            key,
+            (oldData) =>
+              updateCommentInInfiniteData(
+                oldData,
+                variables.commentId,
+                variables.isLiked,
+              ),
+          );
+        }
+      }
+
+      return {
+        previousComments,
+        previousReplies,
+      };
+    },
+    onError: (_error, _variables, context) => {
+      if (!context) return;
+
+      for (const [key, data] of context.previousComments) {
+        queryClient.setQueryData(key, data);
+      }
+      for (const [key, data] of context.previousReplies) {
+        queryClient.setQueryData(key, data);
+      }
+    },
+    onSettled: (_data, _error, variables) => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.comments.detail(variables.postId),
       });

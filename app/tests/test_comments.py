@@ -52,8 +52,9 @@ def create_comment(
     )
 
 
-def get_top_level_comments(client, post_id: int):
-    return client.get(f"/posts/{post_id}/comments?limit=20")
+def get_top_level_comments(client, post_id: int, token: str | None = None):
+    headers = auth_headers(token) if token else None
+    return client.get(f"/posts/{post_id}/comments?limit=20", headers=headers)
 
 
 def test_edit_comment_author_only_and_validation(client):
@@ -133,11 +134,12 @@ def test_like_unlike_comment_idempotent_and_counts(client):
     assert like_1.status_code == 204
     assert like_2.status_code == 204
 
-    listed_after_like = get_top_level_comments(client, post_id)
+    listed_after_like = get_top_level_comments(client, post_id, token_liker)
     assert listed_after_like.status_code == 200
     liked_comment = listed_after_like.json()["items"][0]
     assert liked_comment["id"] == comment_id
     assert liked_comment["like_count"] == 1
+    assert liked_comment["is_liked"] is True
 
     unlike_1 = client.delete(
         f"/comments/{comment_id}/like",
@@ -150,11 +152,12 @@ def test_like_unlike_comment_idempotent_and_counts(client):
     assert unlike_1.status_code == 204
     assert unlike_2.status_code == 204
 
-    listed_after_unlike = get_top_level_comments(client, post_id)
+    listed_after_unlike = get_top_level_comments(client, post_id, token_liker)
     assert listed_after_unlike.status_code == 200
     unliked_comment = listed_after_unlike.json()["items"][0]
     assert unliked_comment["id"] == comment_id
     assert unliked_comment["like_count"] == 0
+    assert unliked_comment["is_liked"] is False
 
 
 def test_like_unlike_missing_comment_returns_not_found(client):

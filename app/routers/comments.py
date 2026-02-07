@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, literal, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, aliased
 
@@ -162,6 +162,7 @@ def create_comment(
         ),
         content=comment.content,
         like_count=comment.like_count,
+        is_liked=False,
         created_at=comment.created_at,
         updated_at=comment.updated_at,
     )
@@ -191,6 +192,12 @@ def update_comment(
         if comment.reply_to_user_id
         else None
     )
+    is_liked = (
+        db.query(models.CommentLike)
+        .filter_by(user_id=current_user.id, comment_id=comment.id)
+        .first()
+        is not None
+    )
 
     return schemas.CommentResponse(
         id=comment.id,
@@ -219,6 +226,7 @@ def update_comment(
         ),
         content=comment.content,
         like_count=comment.like_count,
+        is_liked=is_liked,
         created_at=comment.created_at,
         updated_at=comment.updated_at,
     )
@@ -231,6 +239,7 @@ def update_comment(
 def list_top_level_comments(
     post_id: int,
     db: db_dependency,
+    current_user: models.User | None = Depends(auth.get_current_user_optional),
     limit: int = Query(20, ge=1, le=100),
     cursor: str | None = Query(None),
 ):
@@ -238,14 +247,35 @@ def list_top_level_comments(
     if not post:
         exceptions.raise_not_found_exception("Post not found")
 
-    base_q = (
-        db.query(models.Comment, models.User)
-        .join(models.User, models.Comment.user_id == models.User.id)
-        .filter(
-            models.Comment.post_id == post_id,
-            models.Comment.parent_id.is_(None),
+    if current_user is not None:
+        base_q = (
+            db.query(
+                models.Comment,
+                models.User,
+                models.CommentLike.user_id.label("liked_user_id"),
+            )
+            .join(models.User, models.Comment.user_id == models.User.id)
+            .outerjoin(
+                models.CommentLike,
+                and_(
+                    models.CommentLike.comment_id == models.Comment.id,
+                    models.CommentLike.user_id == current_user.id,
+                ),
+            )
+            .filter(
+                models.Comment.post_id == post_id,
+                models.Comment.parent_id.is_(None),
+            )
         )
-    )
+    else:
+        base_q = (
+            db.query(models.Comment, models.User, literal(None).label("liked_user_id"))
+            .join(models.User, models.Comment.user_id == models.User.id)
+            .filter(
+                models.Comment.post_id == post_id,
+                models.Comment.parent_id.is_(None),
+            )
+        )
 
     if cursor:
         c_like, c_created, c_id = decode_comment_cursor(cursor)
@@ -275,7 +305,7 @@ def list_top_level_comments(
     )
 
     items: list[schemas.CommentResponse] = []
-    for comment, user in rows[:limit]:
+    for comment, user, liked_user_id in rows[:limit]:
         items.append(
             schemas.CommentResponse(
                 id=comment.id,
@@ -293,6 +323,7 @@ def list_top_level_comments(
                 reply_to_user=None,  # optional: join if you want it here
                 content=comment.content,
                 like_count=comment.like_count,
+                is_liked=liked_user_id is not None,
                 created_at=comment.created_at,
                 updated_at=comment.updated_at,
             )
@@ -312,6 +343,7 @@ def list_top_level_comments(
 def list_replies(
     comment_id: int,
     db: db_dependency,
+    current_user: models.User | None = Depends(auth.get_current_user_optional),
     limit: int = Query(20, ge=1, le=100),
     cursor: str | None = Query(None),
 ):
@@ -324,12 +356,37 @@ def list_replies(
         )
 
     reply_user = aliased(models.User)
-    base_q = (
-        db.query(models.Comment, models.User, reply_user)
-        .join(models.User, models.Comment.user_id == models.User.id)
-        .outerjoin(reply_user, models.Comment.reply_to_user_id == reply_user.id)
-        .filter(models.Comment.parent_id == comment_id)
-    )
+    if current_user is not None:
+        base_q = (
+            db.query(
+                models.Comment,
+                models.User,
+                reply_user,
+                models.CommentLike.user_id.label("liked_user_id"),
+            )
+            .join(models.User, models.Comment.user_id == models.User.id)
+            .outerjoin(reply_user, models.Comment.reply_to_user_id == reply_user.id)
+            .outerjoin(
+                models.CommentLike,
+                and_(
+                    models.CommentLike.comment_id == models.Comment.id,
+                    models.CommentLike.user_id == current_user.id,
+                ),
+            )
+            .filter(models.Comment.parent_id == comment_id)
+        )
+    else:
+        base_q = (
+            db.query(
+                models.Comment,
+                models.User,
+                reply_user,
+                literal(None).label("liked_user_id"),
+            )
+            .join(models.User, models.Comment.user_id == models.User.id)
+            .outerjoin(reply_user, models.Comment.reply_to_user_id == reply_user.id)
+            .filter(models.Comment.parent_id == comment_id)
+        )
 
     if cursor:
         c_like, c_created, c_id = decode_comment_cursor(cursor)
@@ -359,7 +416,7 @@ def list_replies(
     )
 
     items: list[schemas.CommentResponse] = []
-    for comment, user, reply_to_user in rows[:limit]:
+    for comment, user, reply_to_user, liked_user_id in rows[:limit]:
         items.append(
             schemas.CommentResponse(
                 id=comment.id,
@@ -388,6 +445,7 @@ def list_replies(
                 ),
                 content=comment.content,
                 like_count=comment.like_count,
+                is_liked=liked_user_id is not None,
                 created_at=comment.created_at,
                 updated_at=comment.updated_at,
             )

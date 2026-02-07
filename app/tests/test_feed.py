@@ -35,6 +35,13 @@ def get_feed(client, token: str, view: str):
     )
 
 
+def get_post_with_counts(client, token: str, post_id: int):
+    return client.get(
+        f"/posts/{post_id}/with_counts",
+        headers=auth_headers(token),
+    )
+
+
 def test_create_post_appears_in_feed(client):
     suffix = uuid.uuid4().hex[:8]
     username = f"user_{suffix}"
@@ -98,3 +105,28 @@ def test_subsriptions_feed_filters_by_following(client):
     assert subs_after.status_code == 200
     posts_after = subs_after.json()
     assert any(p["content"] == content_b for p in posts_after)
+
+
+def test_get_post_with_counts_by_id(client):
+    suffix = uuid.uuid4().hex[:8]
+    username = f"user_{suffix}"
+    email = f"{username}@example.com"
+    password = "test-password"
+
+    reg = register_user(client, username, email, password)
+    assert reg.status_code == 200
+
+    token = login_user(client, username, password).json()["access_token"]
+    created = create_post(client, token, "hello detail endpoint")
+    assert created.status_code == 200
+    post_id = created.json()["id"]
+
+    post_detail = get_post_with_counts(client, token, post_id)
+    assert post_detail.status_code == 200
+    data = post_detail.json()
+    assert data["id"] == post_id
+    assert data["content"] == "hello detail endpoint"
+    assert data["owner_username"] == username
+
+    missing = get_post_with_counts(client, token, 999999)
+    assert missing.status_code == 404

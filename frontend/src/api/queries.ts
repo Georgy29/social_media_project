@@ -9,7 +9,9 @@ import { toast } from "sonner";
 import type { components, operations } from "./types";
 
 import {
+  createComment,
   createPost,
+  deleteComment,
   deletePost,
   addBookmark,
   removeBookmark,
@@ -18,24 +20,30 @@ import {
   getBookmarks,
   getMe,
   getMutualsPreview,
+  getPostWithCounts,
   getSuggestions,
   getUserProfile,
   getUserTimeline,
+  likeComment,
   likePost,
+  listReplies,
+  listTopLevelComments,
   loginUser,
   presignMedia,
   completeMedia,
   registerUser,
   retweetPost,
+  unlikeComment,
   unlikePost,
   unretweetPost,
   unfollowUser,
+  updateComment,
   updateProfile,
   updatePost,
   updateAvatar,
   updateCover,
 } from "./endpoints";
-import { clearToken, getToken, setToken, type ApiError } from "./client";
+import { clearToken, getToken, setToken, toApiError, type ApiError } from "./client";
 
 type Token = components["schemas"]["Token"];
 type User = components["schemas"]["User"];
@@ -48,6 +56,10 @@ type Post = components["schemas"]["Post"];
 type PostCreate = components["schemas"]["PostCreate"];
 type PostUpdate = components["schemas"]["PostUpdate"];
 type PostWithCounts = components["schemas"]["PostWithCounts"];
+type CommentCreate = components["schemas"]["CommentCreate"];
+type CommentUpdate = components["schemas"]["CommentUpdate"];
+type CommentResponse = components["schemas"]["CommentResponse"];
+type CommentListResponse = components["schemas"]["CommentListResponse"];
 type MediaPresignRequest = components["schemas"]["MediaPresignRequest"];
 type MediaPresignResponse = components["schemas"]["MediaPresignResponse"];
 type MediaCompleteResponse = components["schemas"]["MediaCompleteResponse"];
@@ -65,6 +77,10 @@ type MutualsPreviewQuery =
   operations["get_mutuals_preview_users__username__mutuals_preview_get"]["parameters"]["query"];
 type SuggestionsQuery =
   operations["get_suggestions_users_discover_suggestions_get"]["parameters"]["query"];
+type CommentsQuery =
+  operations["list_top_level_comments_posts__post_id__comments_get"]["parameters"]["query"];
+type RepliesQuery =
+  operations["list_replies_comments__comment_id__replies_get"]["parameters"]["query"];
 
 export const queryKeys = {
   me: ["me"] as const,
@@ -90,9 +106,25 @@ export const queryKeys = {
     root: ["feed"] as const,
     list: (params: FeedQuery) => ["feed", params] as const,
   },
+  post: {
+    root: ["post"] as const,
+    detail: (postId: number) => ["post", postId] as const,
+  },
   bookmarks: {
     root: ["bookmarks"] as const,
     list: (params: BookmarksQuery) => ["bookmarks", params] as const,
+  },
+  comments: {
+    root: ["comments"] as const,
+    detail: (postId: number) => ["comments", postId] as const,
+    list: (postId: number, params: CommentsQuery) =>
+      ["comments", postId, params] as const,
+  },
+  replies: {
+    root: ["replies"] as const,
+    detail: (commentId: number) => ["replies", commentId] as const,
+    list: (commentId: number, params: RepliesQuery) =>
+      ["replies", commentId, params] as const,
   },
 } as const;
 
@@ -105,7 +137,7 @@ export function useMeQuery() {
       try {
         return await getMe();
       } catch (e) {
-        const err = e as ApiError;
+        const err = toApiError(e);
         if (err.status === 401) {
           clearToken();
           queryClient.removeQueries({ queryKey: queryKeys.me });
@@ -157,11 +189,63 @@ export function useFeedQuery(params: FeedQuery = {}) {
   });
 }
 
+export function usePostWithCountsQuery(postId?: number) {
+  const queryClient = useQueryClient();
+
+  return useQuery<PostWithCounts, ApiError>({
+    queryKey: queryKeys.post.detail(postId ?? 0),
+    queryFn: () => getPostWithCounts(postId ?? 0),
+    enabled: typeof postId === "number",
+    initialData: () => {
+      if (typeof postId !== "number") return undefined;
+
+      const feedData = queryClient.getQueriesData<PostWithCounts[]>({
+        queryKey: queryKeys.feed.root,
+      });
+      for (const [, posts] of feedData) {
+        const found = posts?.find((post) => post.id === postId);
+        if (found) return found;
+      }
+
+      const bookmarkData = queryClient.getQueriesData<PostWithCounts[]>({
+        queryKey: queryKeys.bookmarks.root,
+      });
+      for (const [, posts] of bookmarkData) {
+        const found = posts?.find((post) => post.id === postId);
+        if (found) return found;
+      }
+
+      return undefined;
+    },
+  });
+}
+
 export function useBookmarksQuery(params: BookmarksQuery = {}) {
   return useQuery<PostWithCounts[], ApiError>({
     queryKey: queryKeys.bookmarks.list(params),
     queryFn: () => getBookmarks(params),
     enabled: Boolean(getToken()),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useTopLevelCommentsQuery(
+  postId?: number,
+  params: CommentsQuery = {},
+) {
+  return useQuery<CommentListResponse, ApiError>({
+    queryKey: queryKeys.comments.list(postId ?? 0, params),
+    queryFn: () => listTopLevelComments(postId ?? 0, params),
+    enabled: typeof postId === "number",
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useRepliesQuery(commentId?: number, params: RepliesQuery = {}) {
+  return useQuery<CommentListResponse, ApiError>({
+    queryKey: queryKeys.replies.list(commentId ?? 0, params),
+    queryFn: () => listReplies(commentId ?? 0, params),
+    enabled: typeof commentId === "number",
     placeholderData: keepPreviousData,
   });
 }
@@ -311,6 +395,109 @@ export function useToggleBookmarkMutation() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.bookmarks.root,
       });
+    },
+  });
+}
+
+export function useCreateCommentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    CommentResponse,
+    ApiError,
+    { postId: number; payload: CommentCreate }
+  >({
+    mutationFn: ({ postId, payload }) => createComment(postId, payload),
+    onSuccess: (comment) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.comments.detail(comment.post_id),
+      });
+      if (comment.parent_id != null) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.replies.detail(comment.parent_id),
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+    },
+  });
+}
+
+export function useUpdateCommentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    CommentResponse,
+    ApiError,
+    { commentId: number; payload: CommentUpdate }
+  >({
+    mutationFn: ({ commentId, payload }) => updateComment(commentId, payload),
+    onSuccess: (comment) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.comments.detail(comment.post_id),
+      });
+      if (comment.parent_id != null) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.replies.detail(comment.parent_id),
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+    },
+  });
+}
+
+export function useDeleteCommentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    void,
+    ApiError,
+    { commentId: number; postId: number; parentId?: number | null }
+  >({
+    mutationFn: ({ commentId }) => deleteComment(commentId),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.comments.detail(variables.postId),
+      });
+      if (variables.parentId != null) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.replies.detail(variables.parentId),
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
+    },
+  });
+}
+
+export function useToggleCommentLikeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    void,
+    ApiError,
+    {
+      commentId: number;
+      postId: number;
+      parentId?: number | null;
+      isLiked: boolean;
+    }
+  >({
+    mutationFn: async ({ commentId, isLiked }) => {
+      if (isLiked) {
+        await unlikeComment(commentId);
+      } else {
+        await likeComment(commentId);
+      }
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.comments.detail(variables.postId),
+      });
+      if (variables.parentId != null) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.replies.detail(variables.parentId),
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
     },
   });
 }

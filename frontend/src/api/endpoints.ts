@@ -15,6 +15,10 @@ type Post = components["schemas"]["Post"];
 type PostCreate = components["schemas"]["PostCreate"];
 type PostUpdate = components["schemas"]["PostUpdate"];
 type PostWithCounts = components["schemas"]["PostWithCounts"];
+type CommentCreate = components["schemas"]["CommentCreate"];
+type CommentUpdate = components["schemas"]["CommentUpdate"];
+type CommentResponse = components["schemas"]["CommentResponse"];
+type CommentListResponse = components["schemas"]["CommentListResponse"];
 type MediaPresignRequest = components["schemas"]["MediaPresignRequest"];
 type MediaPresignResponse = components["schemas"]["MediaPresignResponse"];
 type MediaCompleteResponse = components["schemas"]["MediaCompleteResponse"];
@@ -29,6 +33,25 @@ type MutualsPreviewQuery =
   operations["get_mutuals_preview_users__username__mutuals_preview_get"]["parameters"]["query"];
 type SuggestionsQuery =
   operations["get_suggestions_users_discover_suggestions_get"]["parameters"]["query"];
+type CommentsQuery =
+  operations["list_top_level_comments_posts__post_id__comments_get"]["parameters"]["query"];
+type RepliesQuery =
+  operations["list_replies_comments__comment_id__replies_get"]["parameters"]["query"];
+
+function withQuery(
+  path: string,
+  params: Record<string, string | number | boolean | null | undefined>,
+): string {
+  const search = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+    search.set(key, String(value));
+  }
+
+  const query = search.toString();
+  return query ? `${path}?${query}` : path;
+}
 
 export async function registerUser(payload: UserCreate): Promise<User> {
   return apiFetch<User>("/users/", {
@@ -76,14 +99,10 @@ export async function getUserTimeline(
 ): Promise<
   paths["/users/{username}/timeline"]["get"]["responses"][200]["content"]["application/json"]
 > {
-  const search = new URLSearchParams();
-  if (params?.skip !== undefined) search.set("skip", String(params.skip));
-  if (params?.limit !== undefined) search.set("limit", String(params.limit));
-
-  const query = search.toString();
-  const path = query
-    ? `/users/${encodeURIComponent(username)}/timeline?${query}`
-    : `/users/${encodeURIComponent(username)}/timeline`;
+  const path = withQuery(`/users/${encodeURIComponent(username)}/timeline`, {
+    skip: params?.skip,
+    limit: params?.limit,
+  });
 
   return apiFetch<
     paths["/users/{username}/timeline"]["get"]["responses"][200]["content"]["application/json"]
@@ -94,13 +113,9 @@ export async function getMutualsPreview(
   username: string,
   params: MutualsPreviewQuery = {},
 ): Promise<MutualsPreview> {
-  const search = new URLSearchParams();
-  if (params?.limit !== undefined) search.set("limit", String(params.limit));
-
-  const query = search.toString();
-  const path = query
-    ? `/users/${encodeURIComponent(username)}/mutuals/preview?${query}`
-    : `/users/${encodeURIComponent(username)}/mutuals/preview`;
+  const path = withQuery(`/users/${encodeURIComponent(username)}/mutuals/preview`, {
+    limit: params?.limit,
+  });
 
   return apiFetch<MutualsPreview>(path);
 }
@@ -108,13 +123,9 @@ export async function getMutualsPreview(
 export async function getSuggestions(
   params: SuggestionsQuery = {},
 ): Promise<SuggestionsResponse> {
-  const search = new URLSearchParams();
-  if (params?.limit !== undefined) search.set("limit", String(params.limit));
-
-  const query = search.toString();
-  const path = query
-    ? `/users/discover/suggestions?${query}`
-    : "/users/discover/suggestions";
+  const path = withQuery("/users/discover/suggestions", {
+    limit: params?.limit,
+  });
 
   return apiFetch<SuggestionsResponse>(path);
 }
@@ -122,17 +133,21 @@ export async function getSuggestions(
 export async function getFeed(
   params: FeedQuery = {},
 ): Promise<PostWithCounts[]> {
-  const search = new URLSearchParams();
-  if (params?.skip !== undefined) search.set("skip", String(params.skip));
-  if (params?.limit !== undefined) search.set("limit", String(params.limit));
-  if (params?.view) search.set("view", params.view);
-
-  const query = search.toString();
-  const path = query ? `/posts/with_counts/?${query}` : "/posts/with_counts/";
+  const path = withQuery("/posts/with_counts/", {
+    skip: params?.skip,
+    limit: params?.limit,
+    view: params?.view,
+  });
 
   return apiFetch<
     paths["/posts/with_counts/"]["get"]["responses"][200]["content"]["application/json"]
   >(path);
+}
+
+export async function getPostWithCounts(postId: number): Promise<PostWithCounts> {
+  return apiFetch<
+    paths["/posts/{post_id}/with_counts"]["get"]["responses"][200]["content"]["application/json"]
+  >(`/posts/${postId}/with_counts`);
 }
 
 export async function createPost(payload: PostCreate): Promise<Post> {
@@ -185,12 +200,10 @@ export async function removeBookmark(postId: number): Promise<void> {
 export async function getBookmarks(
   params: BookmarksQuery = {},
 ): Promise<PostWithCounts[]> {
-  const search = new URLSearchParams();
-  if (params?.skip !== undefined) search.set("skip", String(params.skip));
-  if (params?.limit !== undefined) search.set("limit", String(params.limit));
-
-  const query = search.toString();
-  const path = query ? `/bookmarks/?${query}` : "/bookmarks/";
+  const path = withQuery("/bookmarks/", {
+    skip: params?.skip,
+    limit: params?.limit,
+  });
 
   return apiFetch<
     paths["/bookmarks/"]["get"]["responses"][200]["content"]["application/json"]
@@ -234,4 +247,60 @@ export async function followUser(userId: number): Promise<void> {
 
 export async function unfollowUser(userId: number): Promise<void> {
   return apiFetch<void>(`/users/${userId}/unfollow`, { method: "POST" });
+}
+
+export async function createComment(
+  postId: number,
+  payload: CommentCreate,
+): Promise<CommentResponse> {
+  return apiFetch<CommentResponse>(`/posts/${postId}/comments`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listTopLevelComments(
+  postId: number,
+  params: CommentsQuery = {},
+): Promise<CommentListResponse> {
+  const path = withQuery(`/posts/${postId}/comments`, {
+    limit: params?.limit,
+    cursor: params?.cursor,
+  });
+
+  return apiFetch<CommentListResponse>(path);
+}
+
+export async function listReplies(
+  commentId: number,
+  params: RepliesQuery = {},
+): Promise<CommentListResponse> {
+  const path = withQuery(`/comments/${commentId}/replies`, {
+    limit: params?.limit,
+    cursor: params?.cursor,
+  });
+
+  return apiFetch<CommentListResponse>(path);
+}
+
+export async function updateComment(
+  commentId: number,
+  payload: CommentUpdate,
+): Promise<CommentResponse> {
+  return apiFetch<CommentResponse>(`/comments/${commentId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteComment(commentId: number): Promise<void> {
+  return apiFetch<void>(`/comments/${commentId}`, { method: "DELETE" });
+}
+
+export async function likeComment(commentId: number): Promise<void> {
+  return apiFetch<void>(`/comments/${commentId}/like`, { method: "POST" });
+}
+
+export async function unlikeComment(commentId: number): Promise<void> {
+  return apiFetch<void>(`/comments/${commentId}/like`, { method: "DELETE" });
 }

@@ -1,10 +1,44 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-export type ApiError = {
+export class ApiError extends Error {
   status: number;
-  message: string;
   details?: unknown;
-};
+
+  constructor(status: number, message: string, details?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
+export function isApiError(error: unknown): error is ApiError {
+  return (
+    error instanceof ApiError ||
+    (typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      "message" in error)
+  );
+}
+
+export function toApiError(
+  error: unknown,
+  fallbackStatus = 0,
+  fallbackMessage = "Network error. Please try again.",
+): ApiError {
+  if (error instanceof ApiError) return error;
+  if (error instanceof Error) return new ApiError(fallbackStatus, error.message);
+  if (isApiError(error)) {
+    const status =
+      typeof error.status === "number" ? error.status : fallbackStatus;
+    const message =
+      typeof error.message === "string" ? error.message : fallbackMessage;
+    const details = "details" in error ? error.details : undefined;
+    return new ApiError(status, message, details);
+  }
+  return new ApiError(fallbackStatus, fallbackMessage);
+}
 
 const TOKEN_KEY = "access_token";
 
@@ -45,10 +79,15 @@ export async function apiFetch<T>(
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    throw toApiError(error);
+  }
 
   if (!res.ok) {
     let details: unknown = null;
@@ -65,7 +104,7 @@ export async function apiFetch<T>(
         ? details
         : ((details as { detail?: string })?.detail ?? res.statusText);
 
-    throw { status: res.status, message, details } as ApiError;
+    throw new ApiError(res.status, message, details);
   }
 
   if (res.status === 204) return undefined as T;

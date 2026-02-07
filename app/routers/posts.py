@@ -18,6 +18,98 @@ db_dependency = Annotated[Session, Depends(get_db)]
 POST_MAX_LENGTH = 280
 
 
+def _build_posts_with_counts_query(db: Session, current_user: models.User):
+    avatar_media = aliased(models.Media)
+
+    likes_subq = (
+        db.query(models.Like.post_id, func.count(models.Like.user_id).label("likes_count"))
+        .group_by(models.Like.post_id)
+        .subquery()
+    )
+
+    retweets_subq = (
+        db.query(
+            models.Retweet.post_id,
+            func.count(models.Retweet.user_id).label("retweets_count"),
+        )
+        .group_by(models.Retweet.post_id)
+        .subquery()
+    )
+
+    liked_by_me_subq = (
+        db.query(models.Like.post_id.label("post_id"))
+        .filter(models.Like.user_id == current_user.id)
+        .subquery()
+    )
+
+    retweeted_by_me_subq = (
+        db.query(models.Retweet.post_id.label("post_id"))
+        .filter(models.Retweet.user_id == current_user.id)
+        .subquery()
+    )
+
+    bookmarked_by_me_subq = (
+        db.query(models.Bookmark.post_id.label("post_id"))
+        .filter(models.Bookmark.user_id == current_user.id)
+        .subquery()
+    )
+
+    return (
+        db.query(
+            models.Post,
+            models.User.username.label("owner_username"),
+            avatar_media.public_url.label("owner_avatar_url"),
+            func.coalesce(likes_subq.c.likes_count, 0).label("likes_count"),
+            func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
+            liked_by_me_subq.c.post_id.isnot(None).label("is_liked"),
+            retweeted_by_me_subq.c.post_id.isnot(None).label("is_retweeted"),
+            bookmarked_by_me_subq.c.post_id.isnot(None).label("is_bookmarked"),
+            models.Media.public_url.label("media_url"),
+        )
+        .join(models.User, models.Post.owner_id == models.User.id)
+        .outerjoin(models.Media, models.Post.media_id == models.Media.id)
+        .outerjoin(avatar_media, models.User.avatar_media_id == avatar_media.id)
+        .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
+        .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
+        .outerjoin(liked_by_me_subq, models.Post.id == liked_by_me_subq.c.post_id)
+        .outerjoin(
+            retweeted_by_me_subq, models.Post.id == retweeted_by_me_subq.c.post_id
+        )
+        .outerjoin(
+            bookmarked_by_me_subq,
+            models.Post.id == bookmarked_by_me_subq.c.post_id,
+        )
+    )
+
+
+def _to_post_with_counts(row) -> schemas.PostWithCounts:
+    (
+        post,
+        owner_username,
+        owner_avatar_url,
+        likes_count,
+        retweets_count,
+        is_liked,
+        is_retweeted,
+        is_bookmarked,
+        media_url,
+    ) = row
+    return schemas.PostWithCounts(
+        id=post.id,
+        content=post.content,
+        timestamp=post.timestamp,
+        owner_id=post.owner_id,
+        owner_username=owner_username,
+        owner_avatar_url=owner_avatar_url,
+        likes_count=likes_count,
+        retweets_count=retweets_count,
+        is_liked=is_liked,
+        is_retweeted=is_retweeted,
+        is_bookmarked=is_bookmarked,
+        media_url=media_url,
+    )
+
+
 @router.get("/", response_model=List[schemas.Post])
 def read_posts(db: db_dependency, skip: int = 0, limit: int = 10):
     posts = (
@@ -215,6 +307,26 @@ def unretweet_post(
 
 
 @router.get(
+    "/{post_id}/with_counts",
+    response_model=schemas.PostWithCounts,
+    summary="Post detail with reaction counts",
+)
+def read_post_with_counts(
+    post_id: int,
+    db: db_dependency,
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    row = (
+        _build_posts_with_counts_query(db, current_user)
+        .filter(models.Post.id == post_id)
+        .first()
+    )
+    if row is None:
+        exceptions.raise_not_found_exception("Post not found")
+    return _to_post_with_counts(row)
+
+
+@router.get(
     "/with_counts/",
     response_model=List[schemas.PostWithCounts],
     summary="Feed with reaction counts",
@@ -228,74 +340,13 @@ def read_posts_with_counts(
     limit: int = Query(10, ge=1, le=100),
     view: Literal["public", "subscriptions"] = Query("public"),
 ):
-    avatar_media = aliased(models.Media)
     followee_ids_subq = (
         db.query(models.Follow.c.followee_id)
         .filter(models.Follow.c.follower_id == current_user.id)
         .subquery()
     )
 
-    likes_subq = (
-        db.query(
-            models.Like.post_id, func.count(models.Like.user_id).label("likes_count")
-        )
-        .group_by(models.Like.post_id)
-        .subquery()
-    )
-
-    retweets_subq = (
-        db.query(
-            models.Retweet.post_id,
-            func.count(models.Retweet.user_id).label("retweets_count"),
-        )
-        .group_by(models.Retweet.post_id)
-        .subquery()
-    )
-
-    liked_by_me_subq = (
-        db.query(models.Like.post_id.label("post_id"))
-        .filter(models.Like.user_id == current_user.id)
-        .subquery()
-    )
-
-    retweeted_by_me_subq = (
-        db.query(models.Retweet.post_id.label("post_id"))
-        .filter(models.Retweet.user_id == current_user.id)
-        .subquery()
-    )
-
-    bookmarked_by_me_subq = (
-        db.query(models.Bookmark.post_id.label("post_id"))
-        .filter(models.Bookmark.user_id == current_user.id)
-        .subquery()
-    )
-
-    query = (
-        db.query(
-            models.Post,
-            models.User.username.label("owner_username"),
-            avatar_media.public_url.label("owner_avatar_url"),
-            func.coalesce(likes_subq.c.likes_count, 0).label("likes_count"),
-            func.coalesce(retweets_subq.c.retweets_count, 0).label("retweets_count"),
-            liked_by_me_subq.c.post_id.isnot(None).label("is_liked"),
-            retweeted_by_me_subq.c.post_id.isnot(None).label("is_retweeted"),
-            bookmarked_by_me_subq.c.post_id.isnot(None).label("is_bookmarked"),
-            models.Media.public_url.label("media_url"),
-        )
-        .join(models.User, models.Post.owner_id == models.User.id)
-        .outerjoin(models.Media, models.Post.media_id == models.Media.id)
-        .outerjoin(avatar_media, models.User.avatar_media_id == avatar_media.id)
-        .outerjoin(likes_subq, models.Post.id == likes_subq.c.post_id)
-        .outerjoin(retweets_subq, models.Post.id == retweets_subq.c.post_id)
-        .outerjoin(liked_by_me_subq, models.Post.id == liked_by_me_subq.c.post_id)
-        .outerjoin(
-            retweeted_by_me_subq, models.Post.id == retweeted_by_me_subq.c.post_id
-        )
-        .outerjoin(
-            bookmarked_by_me_subq,
-            models.Post.id == bookmarked_by_me_subq.c.post_id,
-        )
-    )
+    query = _build_posts_with_counts_query(db, current_user)
 
     if view == "subscriptions":
         query = query.filter(
@@ -312,33 +363,4 @@ def read_posts_with_counts(
         .all()
     )
 
-    response_posts = []
-    for (
-        post,
-        owner_username,
-        owner_avatar_url,
-        likes_count,
-        retweets_count,
-        is_liked,
-        is_retweeted,
-        is_bookmarked,
-        media_url,
-    ) in posts:
-        response_posts.append(
-            schemas.PostWithCounts(
-                id=post.id,
-                content=post.content,
-                timestamp=post.timestamp,
-                owner_id=post.owner_id,
-                owner_username=owner_username,
-                owner_avatar_url=owner_avatar_url,
-                likes_count=likes_count,
-                retweets_count=retweets_count,
-                is_liked=is_liked,
-                is_retweeted=is_retweeted,
-                is_bookmarked=is_bookmarked,
-                media_url=media_url,
-            )
-        )
-
-    return response_posts
+    return [_to_post_with_counts(row) for row in posts]

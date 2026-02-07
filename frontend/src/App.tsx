@@ -9,6 +9,7 @@ import {
 import FeedPage from "@/pages/Feed";
 import BookmarksPage from "@/pages/Bookmarks";
 import LoginPage from "@/pages/Login";
+import PostDetailPage from "@/pages/PostDetail";
 import ProfilePage from "@/pages/Profile";
 import RegisterPage from "@/pages/Register";
 import { getToken, type ApiError } from "@/api/client";
@@ -103,6 +104,14 @@ export default function App() {
           element={
             <RequireAuth>
               <BookmarksPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/posts/:postId"
+          element={
+            <RequireAuth>
+              <PostDetailPage />
             </RequireAuth>
           }
         />

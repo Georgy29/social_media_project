@@ -17,6 +17,7 @@ import type { components } from "@/api/types";
 
 import { cn } from "@/lib/utils";
 import { getRouteScrollKey, rememberRouteScroll } from "@/lib/route-scroll";
+import { AnimatedCount } from "@/components/AnimatedCount";
 import { ProfileHoverCard } from "@/components/ProfileHoverCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,14 @@ export function PostCard({
     if (snippet) return `Post image: ${snippet}`;
     return `Post image by @${post.owner_username}`;
   })();
+  const topCommentTimeLabel = post.top_comment_preview
+    ? (() => {
+        const created = new Date(post.top_comment_preview.created_at);
+        return Number.isNaN(created.valueOf())
+          ? post.top_comment_preview.created_at
+          : created.toLocaleString();
+      })()
+    : null;
   const draftTooLong = draft.length > MAX_POST_LENGTH;
   const isTimeline = styleMode === "timeline";
 
@@ -231,16 +240,21 @@ export function PostCard({
   };
 
   const actionButtonClass = cn(
-    "min-w-11 justify-center gap-1.5 rounded-md border border-border/70 bg-background hover:bg-muted/60",
+    "min-w-11 justify-center gap-1.5 rounded-full border-0 bg-transparent shadow-none transition-colors duration-150 hover:bg-muted/70",
     isTimeline ? "h-7 px-1.5" : "h-8 px-2",
   );
   const timelineCardClass =
     "rounded-none ring-0 bg-transparent py-2 gap-0 data-[size=sm]:gap-0 border-t border-b border-border/70 first:border-t-0 last:border-b-0";
-  const timelineContentClass = "px-3 pt-3 pb-3 space-y-5";
-  const timelineFooterClass =
-    "bg-muted/20 border-t border-border/60 rounded-none gap-1.5 px-3 py-1.5";
+  const timelineContentClass = cn(
+    "px-3 pt-3 space-y-5",
+    post.media_url ? "pb-0" : "pb-3",
+  );
+  const timelineFooterClass = cn(
+    "bg-muted/20 rounded-none gap-1.5 px-3 py-1.5",
+    post.media_url ? "border-t-0" : "border-t border-border/60",
+  );
   const timelineTopCommentClass =
-    "rounded-none bg-muted/30 px-4 py-1.5 hover:bg-muted/50";
+    "mx-2 my-1 rounded-md border border-border/40 bg-background px-3 py-2 hover:bg-muted/10";
 
   return (
     <Card
@@ -397,7 +411,7 @@ export function PostCard({
         <div className="flex items-center gap-1">
           <Button
             size="xs"
-            variant="outline"
+            variant="ghost"
             aria-pressed={likeState.liked}
             aria-label={likeState.liked ? "Unlike post" : "Like post"}
             title={likeState.liked ? "Unlike" : "Like"}
@@ -409,9 +423,9 @@ export function PostCard({
               className="motion-safe:animate-[heart-pop_280ms_ease-out_1] flex items-center"
             >
               {likeState.liked ? (
-                <IconHeartFilled className="text-rose-500" />
+                <IconHeartFilled className="text-rose-500/90" />
               ) : (
-                <IconHeart className="text-muted-foreground" />
+                <IconHeart className="text-muted-foreground/80" />
               )}
             </span>
             <span className="text-xs font-medium tabular-nums">
@@ -429,7 +443,7 @@ export function PostCard({
             <DropdownMenuTrigger asChild>
               <Button
                 size="xs"
-                variant="outline"
+                variant="ghost"
                 aria-pressed={retweetState.retweeted}
                 aria-label={
                   retweetState.retweeted ? "Repost menu" : "Repost menu"
@@ -443,8 +457,8 @@ export function PostCard({
                 >
                   <IconRepeat
                     className={cn(
-                      "text-muted-foreground transition-colors duration-150",
-                      retweetState.retweeted ? "text-emerald-600" : "",
+                      "text-muted-foreground/80 transition-colors duration-150",
+                      retweetState.retweeted ? "text-emerald-600/90" : "",
                     )}
                   />
                 </span>
@@ -474,7 +488,7 @@ export function PostCard({
           <Button
             size="xs"
             disabled={bookmarkBusy}
-            variant="outline"
+            variant="ghost"
             aria-pressed={bookmarked}
             aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
             title={bookmarked ? "Remove bookmark" : "Add bookmark"}
@@ -482,16 +496,16 @@ export function PostCard({
             onClick={handleToggleBookmark}
           >
             {bookmarked ? (
-              <IconBookmarkFilled className="text-blue-500" />
+              <IconBookmarkFilled className="text-blue-500/90" />
             ) : (
-              <IconBookmark className="text-muted-foreground" />
+              <IconBookmark className="text-muted-foreground/80" />
             )}
           </Button>
           <Button
             size="xs"
-            variant="outline"
+            variant="ghost"
             className={cn(
-              "min-w-[88px] justify-center gap-1.5 rounded-md border border-border/70 bg-background hover:bg-muted/60",
+              "min-w-[88px] justify-center gap-1.5 rounded-full border-0 bg-transparent shadow-none transition-colors duration-150 hover:bg-muted/70",
               isTimeline ? "h-7 px-1.5" : "h-8 px-2",
             )}
             title="Comment"
@@ -547,7 +561,9 @@ export function PostCard({
           </div>
         ) : null}
       </CardFooter>
-      {isTimeline ? <Separator className="bg-border/60" /> : null}
+      {isTimeline && !(showCommentPreview && post.top_comment_preview) ? (
+        <Separator className="bg-border/60" />
+      ) : null}
       {showCommentPreview && post.top_comment_preview ? (
         <div
           className={cn(
@@ -574,41 +590,42 @@ export function PostCard({
             }
           }}
         >
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1">
-              <ProfileHoverCard
-                username={post.top_comment_preview.user.username}
-                userId={post.top_comment_preview.user.id}
-                avatarUrl={post.top_comment_preview.user.avatar_url ?? null}
+          <div className="min-w-0">
+            <ProfileHoverCard
+              username={post.top_comment_preview.user.username}
+              userId={post.top_comment_preview.user.id}
+              avatarUrl={post.top_comment_preview.user.avatar_url ?? null}
+            >
+              <Link
+                to={`/profile/${encodeURIComponent(post.top_comment_preview.user.username)}`}
+                className="inline-flex max-w-full items-center gap-2 text-sm font-semibold"
+                aria-label={`Open profile card for @${post.top_comment_preview.user.username}`}
               >
-                <Link
-                  to={`/profile/${encodeURIComponent(post.top_comment_preview.user.username)}`}
-                  className="inline-flex max-w-full items-center gap-2 text-sm font-semibold"
-                  aria-label={`Open profile card for @${post.top_comment_preview.user.username}`}
-                >
-                  <Avatar className="size-7">
-                    {post.top_comment_preview.user.avatar_url ? (
-                      <AvatarImage
-                        src={post.top_comment_preview.user.avatar_url}
-                        alt={post.top_comment_preview.user.username}
-                      />
-                    ) : null}
-                    <AvatarFallback className="text-[10px] font-semibold">
-                      {(post.top_comment_preview.user.username || "?")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  @{post.top_comment_preview.user.username}
-                </Link>
-              </ProfileHoverCard>
-              <div className="mt-0.5 pl-9 text-sm leading-5 break-words">
-                {post.top_comment_preview.content}
+                <Avatar className="size-7">
+                  {post.top_comment_preview.user.avatar_url ? (
+                    <AvatarImage
+                      src={post.top_comment_preview.user.avatar_url}
+                      alt={post.top_comment_preview.user.username}
+                    />
+                  ) : null}
+                  <AvatarFallback className="text-[10px] font-semibold">
+                    {(post.top_comment_preview.user.username || "?")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                @{post.top_comment_preview.user.username}
+              </Link>
+            </ProfileHoverCard>
+            <div className="mt-1 pl-9 text-sm leading-5 break-words">
+              {post.top_comment_preview.content}
+            </div>
+            <div className="mt-1.5 pl-9 flex items-center justify-between gap-3">
+              <div className="text-muted-foreground/90 text-xs">
+                {topCommentTimeLabel}
               </div>
-              <div className="mt-0.5 pl-9 flex justify-end">
-                <div className="text-muted-foreground/90 text-xs">
-                  {post.top_comment_preview.like_count} likes
-                </div>
+              <div className="text-muted-foreground/90 text-xs">
+                {post.top_comment_preview.like_count} likes
               </div>
             </div>
           </div>
@@ -643,28 +660,5 @@ export function PostCard({
         </AlertDialog>
       ) : null}
     </Card>
-  );
-}
-
-type AnimatedCountProps = {
-  value: number;
-  direction: "up" | "down";
-  animationKey: number;
-};
-
-function AnimatedCount({ value, direction, animationKey }: AnimatedCountProps) {
-  const animationClass =
-    animationKey > 0
-      ? direction === "up"
-        ? "motion-safe:animate-[count-slide-up_160ms_ease-out_1]"
-        : "motion-safe:animate-[count-slide-down_160ms_ease-out_1]"
-      : "";
-
-  return (
-    <span className="inline-flex h-4 min-w-[1.5ch] items-center justify-center overflow-hidden tabular-nums">
-      <span key={animationKey} className={animationClass}>
-        {value}
-      </span>
-    </span>
   );
 }

@@ -19,6 +19,7 @@ import {
   useTopLevelCommentsQuery,
   useUpdateCommentMutation,
 } from "@/api/queries";
+import { AnimatedCount } from "@/components/AnimatedCount";
 import { ProfileHoverCard } from "@/components/ProfileHoverCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,20 @@ function CommentItem({
   const replyToPath = comment.reply_to_user
     ? `/profile/${encodeURIComponent(comment.reply_to_user.username)}`
     : null;
+  const [likeCountKey, setLikeCountKey] = useState(0);
+  const [likeCountDirection, setLikeCountDirection] = useState<"up" | "down">(
+    "up",
+  );
+  const [likePulseKey, setLikePulseKey] = useState(0);
+
+  const handleToggleLike = () => {
+    if (!onToggleLike) return;
+    const delta = comment.is_liked ? -1 : 1;
+    setLikePulseKey((value) => value + 1);
+    setLikeCountDirection(delta > 0 ? "up" : "down");
+    setLikeCountKey((key) => key + 1);
+    onToggleLike();
+  };
 
   return (
     <div
@@ -155,18 +170,29 @@ function CommentItem({
           <Button
             type="button"
             size="xs"
-            variant="outline"
-            className="gap-1.5"
-            onClick={onToggleLike}
+            variant="ghost"
+            className="gap-1.5 rounded-full border-0 bg-transparent shadow-none hover:bg-muted/60"
+            onClick={handleToggleLike}
             disabled={isLikeUpdating}
             aria-label={comment.is_liked ? "Unlike comment" : "Like comment"}
           >
-            {comment.is_liked ? (
-              <IconHeartFilled className="text-rose-500" />
-            ) : (
-              <IconHeart className="text-muted-foreground" />
-            )}
-            <span className="text-xs tabular-nums">{comment.like_count}</span>
+            <span
+              key={likePulseKey}
+              className="motion-safe:animate-[heart-pop_280ms_ease-out_1] flex items-center"
+            >
+              {comment.is_liked ? (
+                <IconHeartFilled className="text-rose-500" />
+              ) : (
+                <IconHeart className="text-muted-foreground" />
+              )}
+            </span>
+            <span className="text-xs font-medium tabular-nums">
+              <AnimatedCount
+                direction={likeCountDirection}
+                value={comment.like_count}
+                animationKey={likeCountKey}
+              />
+            </span>
           </Button>
         ) : null}
 

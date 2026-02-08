@@ -186,11 +186,7 @@ export function PostCard({
           : (current?.liked ?? false),
       count: topCommentPreview.like_count,
     }));
-  }, [
-    topCommentPreview?.id,
-    topCommentPreview?.is_liked,
-    topCommentPreview?.like_count,
-  ]);
+  }, [topCommentPreview]);
 
   const handleToggleLike = () => {
     setLikePulseKey((value) => value + 1);

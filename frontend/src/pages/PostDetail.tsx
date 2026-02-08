@@ -1,22 +1,14 @@
 import { useCallback, useLayoutEffect, useState } from "react";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
-
-import { type ApiError } from "@/api/client";
 import {
   useCreatePostMutation,
-  useDeletePostMutation,
   useLogout,
   useMeQuery,
   usePostWithCountsQuery,
-  useToggleBookmarkMutation,
-  useToggleLikeMutation,
-  useToggleRetweetMutation,
-  useUpdatePostMutation,
 } from "@/api/queries";
 import { PostComposerDialog } from "@/components/PostComposerDialog";
-import { type PostWithCounts, PostCard } from "@/components/PostCard";
+import { PostCard } from "@/components/PostCard";
 import { AlertDialog } from "@/components/animate-ui/components/radix/alert-dialog";
 import { CommentThread } from "@/components/comments/CommentThread";
 import { AppShell } from "@/components/layout/AppShell";
@@ -29,6 +21,7 @@ import { getSidebarUser } from "@/components/sidebar/sidebar-user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { usePostCardActions } from "@/hooks/usePostCardActions";
 
 type PostDetailLocationState = {
   from?: string;
@@ -47,11 +40,19 @@ export default function PostDetailPage() {
 
   const meQuery = useMeQuery();
   const createPostMutation = useCreatePostMutation();
-  const updatePostMutation = useUpdatePostMutation();
-  const deletePostMutation = useDeletePostMutation();
-  const toggleLikeMutation = useToggleLikeMutation();
-  const toggleRetweetMutation = useToggleRetweetMutation();
-  const toggleBookmarkMutation = useToggleBookmarkMutation();
+  const handleDeleteSuccess = useCallback(() => {
+    navigate("/feed", { replace: true });
+  }, [navigate]);
+  const {
+    isPostMutating,
+    handleToggleLike,
+    handleToggleRetweet,
+    handleToggleBookmark,
+    handleUpdatePost,
+    handleDeletePost,
+  } = usePostCardActions({
+    onDeleteSuccess: handleDeleteSuccess,
+  });
   const postQuery = usePostWithCountsQuery(postIdNumber);
 
   const [composerOpen, setComposerOpen] = useState(false);
@@ -97,98 +98,6 @@ export default function PostDetailPage() {
     logout();
     navigate("/login", { replace: true });
   };
-
-  const isPostMutating = useCallback(
-    (id: number) =>
-      (updatePostMutation.isPending &&
-        updatePostMutation.variables?.postId === id) ||
-      (deletePostMutation.isPending &&
-        deletePostMutation.variables?.postId === id) ||
-      (toggleLikeMutation.isPending &&
-        toggleLikeMutation.variables?.postId === id) ||
-      (toggleRetweetMutation.isPending &&
-        toggleRetweetMutation.variables?.postId === id) ||
-      (toggleBookmarkMutation.isPending &&
-        toggleBookmarkMutation.variables?.postId === id),
-    [
-      updatePostMutation.isPending,
-      updatePostMutation.variables?.postId,
-      deletePostMutation.isPending,
-      deletePostMutation.variables?.postId,
-      toggleLikeMutation.isPending,
-      toggleLikeMutation.variables?.postId,
-      toggleRetweetMutation.isPending,
-      toggleRetweetMutation.variables?.postId,
-      toggleBookmarkMutation.isPending,
-      toggleBookmarkMutation.variables?.postId,
-    ],
-  );
-
-  const handleToggleLike = useCallback(
-    (post: PostWithCounts) => {
-      toggleLikeMutation.mutate({ postId: post.id, isLiked: post.is_liked });
-    },
-    [toggleLikeMutation],
-  );
-
-  const handleToggleRetweet = useCallback(
-    (post: PostWithCounts) => {
-      toggleRetweetMutation.mutate(
-        { postId: post.id, isRetweeted: post.is_retweeted },
-        {
-          onSuccess: () => {
-            toast.success(post.is_retweeted ? "Repost removed" : "Reposted");
-          },
-          onError: (error: ApiError) => {
-            toast.error(error.message);
-          },
-        },
-      );
-    },
-    [toggleRetweetMutation],
-  );
-
-  const handleToggleBookmark = useCallback(
-    async (post: PostWithCounts, nextState: boolean) => {
-      await toggleBookmarkMutation.mutateAsync({
-        postId: post.id,
-        nextState,
-      });
-    },
-    [toggleBookmarkMutation],
-  );
-
-  const handleUpdatePost = useCallback(
-    async (id: number, content: string) => {
-      try {
-        await updatePostMutation.mutateAsync({
-          postId: id,
-          payload: { content },
-        });
-        toast.success("Updated");
-      } catch (error) {
-        const apiError = error as ApiError;
-        toast.error(apiError.message);
-        throw error;
-      }
-    },
-    [updatePostMutation],
-  );
-
-  const handleDeletePost = useCallback(
-    async (id: number) => {
-      try {
-        await deletePostMutation.mutateAsync({ postId: id });
-        toast.success("Deleted");
-        navigate("/feed", { replace: true });
-      } catch (error) {
-        const apiError = error as ApiError;
-        toast.error(apiError.message);
-        throw error;
-      }
-    },
-    [deletePostMutation, navigate],
-  );
 
   const handleCreatePost = async (content: string, mediaId: number | null) => {
     const payload = mediaId ? { content, media_id: mediaId } : { content };

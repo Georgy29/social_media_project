@@ -1,15 +1,16 @@
 from typing import Annotated, List, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from .. import auth, exceptions, models, schemas
 from ..database import get_db
 from ..rate_limit import limiter
-from ..services.feed_query import build_posts_with_counts_query
+from ..services.feed_query import apply_feed_view_filter, build_posts_with_counts_query
 from ..services.post_mapper import to_post_with_counts
 from ..services.post_write_service import (
+    get_owned_post_or_404,
+    get_post_or_404,
     normalize_post_content,
     validate_post_edit_window,
     validate_post_media_for_create,
@@ -67,11 +68,7 @@ def delete_existing_post(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if post is None:
-        exceptions.raise_not_found_exception("Post not found")
-    if post.owner_id != current_user.id:
-        exceptions.raise_forbidden_exception("Not authorized to delete this post")
+    post = get_owned_post_or_404(db, post_id, current_user, action="delete")
 
     db.delete(post)
     db.commit()
@@ -89,11 +86,7 @@ def update_post(
 ):
     content = normalize_post_content(post_update.content)
 
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if not post:
-        exceptions.raise_not_found_exception("Post not found")
-    if post.owner_id != current_user.id:
-        exceptions.raise_forbidden_exception("Not authorized to edit this post")
+    post = get_owned_post_or_404(db, post_id, current_user, action="edit")
 
     validate_post_edit_window(post)
 
@@ -111,9 +104,7 @@ def like_post(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if post is None:
-        exceptions.raise_not_found_exception("Post not found")
+    get_post_or_404(db, post_id)
 
     like = (
         db.query(models.Like)
@@ -158,9 +149,7 @@ def retweet_post(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if post is None:
-        exceptions.raise_not_found_exception("Post not found")
+    get_post_or_404(db, post_id)
 
     retweet = (
         db.query(models.Retweet)
@@ -231,21 +220,8 @@ def read_posts_with_counts(
     limit: int = Query(10, ge=1, le=100),
     view: Literal["public", "subscriptions"] = Query("public"),
 ):
-    followee_ids_subq = (
-        db.query(models.Follow.c.followee_id)
-        .filter(models.Follow.c.follower_id == current_user.id)
-        .subquery()
-    )
-
     query = build_posts_with_counts_query(db, current_user)
-
-    if view == "subscriptions":
-        query = query.filter(
-            or_(
-                models.Post.owner_id == current_user.id,
-                models.Post.owner_id.in_(select(followee_ids_subq.c.followee_id)),
-            )
-        )
+    query = apply_feed_view_filter(query, db, current_user, view)
 
     posts = (
         query.order_by(models.Post.timestamp.desc(), models.Post.id.desc())

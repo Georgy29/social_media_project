@@ -1,5 +1,5 @@
-from sqlalchemy import and_, func
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.orm import Query, Session, aliased
 
 from .. import models
 
@@ -126,5 +126,28 @@ def build_posts_with_counts_query(db: Session, current_user: models.User):
                 == ranked_top_comments_subq.c.comment_id,
                 top_comment_liked_by_me.user_id == current_user.id,
             ),
+        )
+    )
+
+
+def apply_feed_view_filter(
+    query: Query,
+    db: Session,
+    current_user: models.User,
+    view: str,
+) -> Query:
+    if view != "subscriptions":
+        return query
+
+    followee_ids_subq = (
+        db.query(models.Follow.c.followee_id)
+        .filter(models.Follow.c.follower_id == current_user.id)
+        .subquery()
+    )
+
+    return query.filter(
+        or_(
+            models.Post.owner_id == current_user.id,
+            models.Post.owner_id.in_(select(followee_ids_subq.c.followee_id)),
         )
     )

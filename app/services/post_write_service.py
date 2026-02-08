@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 from sqlalchemy.orm import Session
 
@@ -40,3 +41,22 @@ def validate_post_edit_window(post: models.Post, max_minutes: int = 10) -> None:
         exceptions.raise_bad_request_exception(
             f"You can only edit a post within {max_minutes} minutes of its creation"
         )
+
+
+def get_post_or_404(db: Session, post_id: int) -> models.Post:
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if post is None:
+        exceptions.raise_not_found_exception("Post not found")
+    return post
+
+
+def get_owned_post_or_404(
+    db: Session,
+    post_id: int,
+    current_user: models.User,
+    action: Literal["edit", "delete"] = "edit",
+) -> models.Post:
+    post = get_post_or_404(db, post_id)
+    if post.owner_id != current_user.id:
+        exceptions.raise_forbidden_exception(f"Not authorized to {action} this post")
+    return post

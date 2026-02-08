@@ -41,7 +41,9 @@ export default function PostDetailPage() {
   const logout = useLogout();
   const { postId } = useParams();
   const parsedPostId = Number(postId);
-  const postIdNumber = Number.isInteger(parsedPostId) ? parsedPostId : undefined;
+  const postIdNumber = Number.isInteger(parsedPostId)
+    ? parsedPostId
+    : undefined;
 
   const meQuery = useMeQuery();
   const createPostMutation = useCreatePostMutation();
@@ -56,7 +58,9 @@ export default function PostDetailPage() {
   const [commentFocusKey, setCommentFocusKey] = useState(0);
 
   const locationState = location.state as PostDetailLocationState | null;
-  const shouldFocusCommentComposer = Boolean(locationState?.focusCommentComposer);
+  const shouldFocusCommentComposer = Boolean(
+    locationState?.focusCommentComposer,
+  );
 
   useLayoutEffect(() => {
     if (shouldFocusCommentComposer) return;
@@ -96,9 +100,12 @@ export default function PostDetailPage() {
 
   const isPostMutating = useCallback(
     (id: number) =>
-      (updatePostMutation.isPending && updatePostMutation.variables?.postId === id) ||
-      (deletePostMutation.isPending && deletePostMutation.variables?.postId === id) ||
-      (toggleLikeMutation.isPending && toggleLikeMutation.variables?.postId === id) ||
+      (updatePostMutation.isPending &&
+        updatePostMutation.variables?.postId === id) ||
+      (deletePostMutation.isPending &&
+        deletePostMutation.variables?.postId === id) ||
+      (toggleLikeMutation.isPending &&
+        toggleLikeMutation.variables?.postId === id) ||
       (toggleRetweetMutation.isPending &&
         toggleRetweetMutation.variables?.postId === id) ||
       (toggleBookmarkMutation.isPending &&

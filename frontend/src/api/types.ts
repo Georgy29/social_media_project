@@ -669,6 +669,8 @@ export interface components {
             content: string;
             /** Like Count */
             like_count: number;
+            /** Is Liked */
+            is_liked: boolean;
             /**
              * Created At
              * Format: date-time

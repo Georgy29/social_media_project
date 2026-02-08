@@ -54,6 +54,7 @@ class PostTopCommentPreview(BaseModel):
     id: int
     content: str
     like_count: int
+    is_liked: bool = False
     created_at: datetime
     user: UserPreview
 

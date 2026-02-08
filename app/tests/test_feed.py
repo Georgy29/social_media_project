@@ -178,4 +178,12 @@ def test_feed_returns_top_comment_preview(client):
     assert post["top_comment_preview"] is not None
     assert post["top_comment_preview"]["content"] == "top liked comment"
     assert post["top_comment_preview"]["like_count"] == 1
+    assert post["top_comment_preview"]["is_liked"] is False
     assert post["top_comment_preview"]["user"]["username"] == author
+
+    feed_liker = get_feed(client, token_liker, view="public")
+    assert feed_liker.status_code == 200
+    post_for_liker = next((p for p in feed_liker.json() if p["id"] == post_id), None)
+    assert post_for_liker is not None
+    assert post_for_liker["top_comment_preview"] is not None
+    assert post_for_liker["top_comment_preview"]["is_liked"] is True

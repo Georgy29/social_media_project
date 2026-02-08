@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   IconBookmark,
@@ -14,6 +20,7 @@ import {
 import { toast } from "sonner";
 
 import type { components } from "@/api/types";
+import { useToggleCommentLikeMutation } from "@/api/queries";
 
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/date";
@@ -110,17 +117,35 @@ export function PostCard({
   const [retweetCountDirection, setRetweetCountDirection] = useState<
     "up" | "down"
   >("up");
+  const [topCommentLikePulseKey, setTopCommentLikePulseKey] = useState(0);
+  const [topCommentLikeCountKey, setTopCommentLikeCountKey] = useState(0);
+  const [topCommentLikeCountDirection, setTopCommentLikeCountDirection] =
+    useState<"up" | "down">("up");
+  const [topCommentLikeBusy, setTopCommentLikeBusy] = useState(false);
   const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase();
   const avatarUrl = post.owner_avatar_url ?? null;
   const profilePath = `/profile/${encodeURIComponent(post.owner_username)}`;
   const postDetailPath = `/posts/${post.id}`;
+  const topCommentPreview = post.top_comment_preview ?? null;
+  const [topCommentLikeState, setTopCommentLikeState] = useState<{
+    liked: boolean;
+    count: number;
+  } | null>(
+    topCommentPreview
+      ? {
+          liked: Boolean(topCommentPreview.is_liked),
+          count: topCommentPreview.like_count,
+        }
+      : null,
+  );
+  const toggleCommentLikeMutation = useToggleCommentLikeMutation();
   const mediaAlt = (() => {
     const snippet = post.content.trim().replace(/\s+/g, " ").slice(0, 80);
     if (snippet) return `Post image: ${snippet}`;
     return `Post image by @${post.owner_username}`;
   })();
-  const topCommentTimeLabel = post.top_comment_preview
-    ? formatDateTime(post.top_comment_preview.created_at)
+  const topCommentTimeLabel = topCommentPreview
+    ? formatDateTime(topCommentPreview.created_at)
     : null;
   const draftTooLong = draft.length > MAX_POST_LENGTH;
   const isTimeline = styleMode === "timeline";
@@ -146,6 +171,25 @@ export function PostCard({
     post.is_retweeted,
     post.retweets_count,
     post.is_bookmarked,
+  ]);
+
+  useEffect(() => {
+    if (!topCommentPreview) {
+      setTopCommentLikeState(null);
+      return;
+    }
+
+    setTopCommentLikeState((current) => ({
+      liked:
+        typeof topCommentPreview.is_liked === "boolean"
+          ? topCommentPreview.is_liked
+          : (current?.liked ?? false),
+      count: topCommentPreview.like_count,
+    }));
+  }, [
+    topCommentPreview?.id,
+    topCommentPreview?.is_liked,
+    topCommentPreview?.like_count,
   ]);
 
   const handleToggleLike = () => {
@@ -179,6 +223,54 @@ export function PostCard({
     if (open) {
       retweetMenuOpenedAt.current = Date.now();
     }
+  };
+
+  const handleToggleTopCommentLike = (
+    event:
+      | MouseEvent<HTMLButtonElement>
+      | KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!topCommentPreview || !topCommentLikeState) return;
+
+    if (
+      topCommentLikeBusy ||
+      (toggleCommentLikeMutation.isPending &&
+        toggleCommentLikeMutation.variables?.commentId === topCommentPreview.id)
+    ) {
+      return;
+    }
+
+    const previousState = topCommentLikeState;
+    const nextLiked = !previousState.liked;
+    const delta = nextLiked ? 1 : -1;
+    const nextCount = Math.max(0, previousState.count + delta);
+
+    setTopCommentLikePulseKey((value) => value + 1);
+    setTopCommentLikeCountDirection(delta > 0 ? "up" : "down");
+    setTopCommentLikeCountKey((key) => key + 1);
+    setTopCommentLikeState({ liked: nextLiked, count: nextCount });
+    setTopCommentLikeBusy(true);
+
+    toggleCommentLikeMutation.mutate(
+      {
+        commentId: topCommentPreview.id,
+        postId: post.id,
+        isLiked: previousState.liked,
+      },
+      {
+        onError: () => {
+          setTopCommentLikeState(previousState);
+          setTopCommentLikeBusy(false);
+          toast.error("Failed to update comment like");
+        },
+        onSettled: () => {
+          setTopCommentLikeBusy(false);
+        },
+      },
+    );
   };
 
   const handleToggleBookmark = async () => {
@@ -555,7 +647,7 @@ export function PostCard({
       {isTimeline && !(showCommentPreview && post.top_comment_preview) ? (
         <Separator className="bg-border/60" />
       ) : null}
-      {showCommentPreview && post.top_comment_preview ? (
+      {showCommentPreview && topCommentPreview ? (
         <div
           className={cn(
             "transition-colors duration-150 cursor-pointer",
@@ -566,14 +658,26 @@ export function PostCard({
           role="button"
           tabIndex={0}
           onClick={(event) => {
-            if (!(event.target instanceof HTMLElement)) return;
-            if (event.target.closest("a")) return;
+            if (
+              event.target instanceof HTMLElement &&
+              event.target.closest(
+                "a,button,input,textarea,select,label,[role='menuitem'],[data-no-post-open='true']",
+              )
+            ) {
+              return;
+            }
             event.stopPropagation();
             openComments();
           }}
           onKeyDown={(event) => {
-            if (!(event.target instanceof HTMLElement)) return;
-            if (event.target.closest("a")) return;
+            if (
+              event.target instanceof HTMLElement &&
+              event.target.closest(
+                "a,button,input,textarea,select,label,[role='menuitem'],[data-no-post-open='true']",
+              )
+            ) {
+              return;
+            }
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               event.stopPropagation();
@@ -583,41 +687,73 @@ export function PostCard({
         >
           <div className="min-w-0">
             <ProfileHoverCard
-              username={post.top_comment_preview.user.username}
-              userId={post.top_comment_preview.user.id}
-              avatarUrl={post.top_comment_preview.user.avatar_url ?? null}
+              username={topCommentPreview.user.username}
+              userId={topCommentPreview.user.id}
+              avatarUrl={topCommentPreview.user.avatar_url ?? null}
             >
               <Link
-                to={`/profile/${encodeURIComponent(post.top_comment_preview.user.username)}`}
+                to={`/profile/${encodeURIComponent(topCommentPreview.user.username)}`}
                 className="inline-flex max-w-full items-center gap-2 text-sm font-semibold"
-                aria-label={`Open profile card for @${post.top_comment_preview.user.username}`}
+                aria-label={`Open profile card for @${topCommentPreview.user.username}`}
               >
                 <Avatar className="size-7">
-                  {post.top_comment_preview.user.avatar_url ? (
+                  {topCommentPreview.user.avatar_url ? (
                     <AvatarImage
-                      src={post.top_comment_preview.user.avatar_url}
-                      alt={post.top_comment_preview.user.username}
+                      src={topCommentPreview.user.avatar_url}
+                      alt={topCommentPreview.user.username}
                     />
                   ) : null}
                   <AvatarFallback className="text-[10px] font-semibold">
-                    {(post.top_comment_preview.user.username || "?")
-                      .slice(0, 2)
-                      .toUpperCase()}
+                    {(topCommentPreview.user.username || "?").slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                @{post.top_comment_preview.user.username}
+                @{topCommentPreview.user.username}
               </Link>
             </ProfileHoverCard>
             <div className="mt-1 pl-9 text-sm leading-5 break-words">
-              {post.top_comment_preview.content}
+              {topCommentPreview.content}
             </div>
             <div className="mt-1.5 pl-9 flex items-center justify-between gap-3">
-              <div className="text-muted-foreground/90 text-xs">
+              <div className="text-muted-foreground/70 text-[11px]">
                 {topCommentTimeLabel}
               </div>
-              <div className="text-muted-foreground/90 text-xs">
-                {post.top_comment_preview.like_count} likes
-              </div>
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                className="h-6 gap-1 rounded-full px-1.5 text-muted-foreground/80 hover:bg-muted/50"
+                aria-pressed={topCommentLikeState?.liked ?? false}
+                aria-label={
+                  topCommentLikeState?.liked
+                    ? `Unlike top comment (${topCommentLikeState.count})`
+                    : `Like top comment (${topCommentLikeState?.count ?? 0})`
+                }
+                disabled={
+                  topCommentLikeBusy ||
+                  (toggleCommentLikeMutation.isPending &&
+                    toggleCommentLikeMutation.variables?.commentId ===
+                      topCommentPreview.id)
+                }
+                onClick={handleToggleTopCommentLike}
+              >
+                <span
+                  key={topCommentLikePulseKey}
+                  className="motion-safe:animate-[heart-pop_280ms_ease-out_1] flex items-center"
+                >
+                  {topCommentLikeState?.liked ? (
+                    <IconHeartFilled className="h-3.5 w-3.5 text-rose-500/90" />
+                  ) : (
+                    <IconHeart className="h-3.5 w-3.5" />
+                  )}
+                </span>
+                <span className="text-[11px] tabular-nums">
+                  <AnimatedCount
+                    direction={topCommentLikeCountDirection}
+                    value={topCommentLikeState?.count ?? 0}
+                    animationKey={topCommentLikeCountKey}
+                  />
+                </span>
+              </Button>
             </div>
           </div>
         </div>

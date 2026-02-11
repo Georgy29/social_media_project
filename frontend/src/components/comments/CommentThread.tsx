@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   IconDotsVertical,
@@ -91,6 +97,13 @@ function CommentItem({
     "up",
   );
   const [likePulseKey, setLikePulseKey] = useState(0);
+  const isEdited = (() => {
+    const createdAt = new Date(comment.created_at).getTime();
+    const updatedAt = new Date(comment.updated_at).getTime();
+    if (!Number.isFinite(createdAt) || !Number.isFinite(updatedAt))
+      return false;
+    return updatedAt > createdAt;
+  })();
 
   const handleToggleLike = () => {
     if (!onToggleLike) return;
@@ -137,6 +150,9 @@ function CommentItem({
         </ProfileHoverCard>
         <div className="text-muted-foreground text-xs shrink-0">
           {formatDateTime(comment.created_at)}
+          {isEdited ? (
+            <span className="ml-1 text-muted-foreground/80">· Edited</span>
+          ) : null}
         </div>
       </div>
 
@@ -276,7 +292,9 @@ function CommentEditForm({
         {error ? (
           <div className="text-destructive text-xs">{error}</div>
         ) : (
-          <div className="text-muted-foreground text-xs">{value.length}/400</div>
+          <div className="text-muted-foreground text-xs">
+            {value.length}/400
+          </div>
         )}
         <Button
           type="button"
@@ -406,16 +424,21 @@ export function CommentThread({
   const updateCommentMutation = useUpdateCommentMutation();
   const deleteCommentMutation = useDeleteCommentMutation();
   const toggleCommentLikeMutation = useToggleCommentLikeMutation();
-  const topComments = commentsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const topComments =
+    commentsQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   const [commentDraft, setCommentDraft] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   const [replyDraft, setReplyDraft] = useState("");
   const [replyError, setReplyError] = useState<string | null>(null);
-  const [editingTarget, setEditingTarget] = useState<EditingTarget | null>(null);
+  const [editingTarget, setEditingTarget] = useState<EditingTarget | null>(
+    null,
+  );
   const [editError, setEditError] = useState<string | null>(null);
-  const [commentActionError, setCommentActionError] = useState<string | null>(null);
+  const [commentActionError, setCommentActionError] = useState<string | null>(
+    null,
+  );
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const hasAutoFocusedComposerRef = useRef(false);
@@ -696,7 +719,9 @@ export function CommentThread({
                       comment={comment}
                       canManage={currentUserId === comment.user.id}
                       onReply={() => openReplyToTopComment(comment)}
-                      onToggleLike={() => handleToggleCommentLike(comment, null)}
+                      onToggleLike={() =>
+                        handleToggleCommentLike(comment, null)
+                      }
                       isLikeUpdating={isLikeUpdating(comment.id)}
                       onEdit={() => startEditingComment(comment, null)}
                       onDelete={() => handleDeleteComment(comment, null)}
@@ -716,7 +741,9 @@ export function CommentThread({
                     onDelete={handleDeleteComment}
                     isUpdatePending={isUpdatePending}
                     isDeletePending={isDeletePending}
-                    onReplyToReply={(reply) => openReplyToReply(comment.id, reply)}
+                    onReplyToReply={(reply) =>
+                      openReplyToReply(comment.id, reply)
+                    }
                     onToggleLike={handleToggleCommentLike}
                     isLikeUpdating={isLikeUpdating}
                   />
@@ -741,7 +768,9 @@ export function CommentThread({
                       />
                       <div className="flex items-center gap-2">
                         {replyError ? (
-                          <div className="text-destructive text-xs">{replyError}</div>
+                          <div className="text-destructive text-xs">
+                            {replyError}
+                          </div>
                         ) : (
                           <div className="text-muted-foreground text-xs">
                             {replyDraft.length}/400
@@ -759,10 +788,13 @@ export function CommentThread({
                         <Button
                           type="submit"
                           disabled={
-                            createCommentMutation.isPending || !replyDraft.trim()
+                            createCommentMutation.isPending ||
+                            !replyDraft.trim()
                           }
                         >
-                          {createCommentMutation.isPending ? "Posting..." : "Reply"}
+                          {createCommentMutation.isPending
+                            ? "Posting..."
+                            : "Reply"}
                         </Button>
                       </div>
                     </form>

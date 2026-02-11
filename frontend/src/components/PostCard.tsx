@@ -222,9 +222,7 @@ export function PostCard({
   };
 
   const handleToggleTopCommentLike = (
-    event:
-      | MouseEvent<HTMLButtonElement>
-      | KeyboardEvent<HTMLButtonElement>,
+    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>,
   ) => {
     event.preventDefault();
     event.stopPropagation();
@@ -393,10 +391,7 @@ export function PostCard({
         </div>
       </CardHeader>
       <CardContent
-        className={cn(
-          "space-y-3",
-          isTimeline ? timelineContentClass : "",
-        )}
+        className={cn("space-y-3", isTimeline ? timelineContentClass : "")}
       >
         {editing ? (
           <div className="space-y-2">
@@ -700,7 +695,9 @@ export function PostCard({
                     />
                   ) : null}
                   <AvatarFallback className="text-[10px] font-semibold">
-                    {(topCommentPreview.user.username || "?").slice(0, 2).toUpperCase()}
+                    {(topCommentPreview.user.username || "?")
+                      .slice(0, 2)
+                      .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 @{topCommentPreview.user.username}

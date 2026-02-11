@@ -37,10 +37,12 @@ Frontend (must ship)
 - [x] Basic loading/errors/toasts
 
 Explicitly NOT MVP (v0 scope)
-- [ ] Comments
 - [ ] Redis
 - [ ] PKCE/OIDC
 - [ ] AI features
+
+Post-freeze additions (implemented)
+- [x] Comments (post detail + threaded replies + likes + feed preview)
 
 
 ### API contract decisions (write down once)

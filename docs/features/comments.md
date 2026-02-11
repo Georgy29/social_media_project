@@ -4,7 +4,18 @@
 Implement a comments system for a social media app:
 - X-style layout/navigation (feed in center, sidebars left/right; clicking a post navigates to a post detail route).
 - VK-style comment threading: 2-level structure (top-level comments + replies indented under each top-level comment).
-- Replies can optionally target a specific user/comment within the same thread (VK вЂњName,вЂќ behavior) without creating deep nesting.
+- Replies can optionally target a specific user/comment within the same thread (VK-style reply-to-user prefix) without creating deep nesting.
+
+## Status (2026-02-11)
+Implemented:
+- Backend DB + endpoints + cursor pagination + comment likes + rate limits.
+- Frontend post detail route, threaded UI, likes, edit/delete, feed preview.
+
+Gaps / future improvements:
+- Preview truncation (feed shows full comment text right now).
+- "Edited" label in UI when `updated_at > created_at`.
+- Optimistic create (currently refetch-based).
+- Additional backend tests (ordering, invariants, delete).
 
 ## UX Requirements
 
@@ -12,7 +23,7 @@ Implement a comments system for a social media app:
 - Show one preview comment under each post:
   - Pick the top-level comment with the highest `like_count`.
   - Tie-breaker: `created_at` ascending (older wins).
-- Preview includes: author name, short text snippet, like count.
+- Preview includes: author name, full text (no truncation yet), like count.
 - Clicking the post navigates to Post Detail page.
 
 ### Post Detail Page (X-style Route)
@@ -25,7 +36,7 @@ Implement a comments system for a social media app:
   - Top-level comments (`parent_id` is NULL)
   - Replies (`parent_id` points to the top-level comment)
 - Replies are indented under the top-level comment.
-- Replies are initially collapsed to first N (e.g., 1). Provide "Load more replies".
+- Replies are paginated; initial page uses `limit=5` and shows "Load more replies" when more are available.
 
 ### Sorting (No UI Toggles)
 Single global sorting rule:
@@ -35,16 +46,16 @@ Single global sorting rule:
   - `id` ASC (final deterministic tie-breaker)
 - Replies under a top-level comment follow the same rule.
 
-### Reply UX (VK-style вЂњreply to userвЂќ Without Deep Nesting)
-- Clicking вЂњReplyвЂќ on a top-level comment creates a reply with:
+### Reply UX (Reply-to-user Without Deep Nesting)
+- Clicking "Reply" on a top-level comment creates a reply with:
   - `parent_id = top_level_comment.id`
   - `reply_to_comment_id = NULL`
-  - `reply_to_user_id = top_level_comment.user_id` (VK-style вЂњName,вЂќ prefix)
-- Clicking вЂњReplyвЂќ on a reply (child comment) creates a new reply still under the same top-level comment:
+  - `reply_to_user_id = top_level_comment.user_id` (reply-to-user prefix)
+- Clicking "Reply" on a reply (child comment) creates a new reply still under the same top-level comment:
   - `parent_id = top_level_comment.id`
   - `reply_to_comment_id = replied_child_comment.id`
   - `reply_to_user_id = replied_child_comment.user_id`
-- UI should render a prefix like вЂњName,вЂќ (clickable profile link) whenever `reply_to_user_id` is present.
+- UI renders an `@username` prefix (clickable profile link) whenever `reply_to_user_id` is present.
   - This prefix must be structural (not inferred from the text content).
 
 ### Mentions
@@ -123,7 +134,7 @@ Validation:
   - Ensure it belongs to same `post_id` and same thread (`parent_id`).
   - Ensure `reply_to_user_id` matches the targeted comment author (or compute it server-side).
 - If `reply_to_comment_id` is not provided AND `parent_id` is provided:
-  - Set `reply_to_user_id` to the top-level parentвЂ™s `user_id` (VK-style вЂњName,вЂќ prefix).
+  - Set `reply_to_user_id` to the top-level parent's `user_id` (reply-to-user prefix).
 - If `parent_id` is NULL (top-level comment):
   - Ensure `reply_to_comment_id` and `reply_to_user_id` are both NULL (per constraint).
 
@@ -164,7 +175,7 @@ Body:
 Rules:
 - Author only.
 - Updates `updated_at`.
-- UI shows вЂњEditedвЂќ if `updated_at > created_at`.
+- UI does not currently show an "Edited" label (optional future polish).
 
 ## Cursor Pagination Specification (Important)
 Because sorting is not purely time-based, the cursor must encode:
@@ -205,7 +216,7 @@ Cursor format:
 - Prefer server-side: feed API includes `top_comment_preview` to avoid N+1 client fetches.
 - Render preview under post card:
   - author
-  - snippet
+  - content (no truncation yet)
   - like count
 
 ### Post Detail Page
@@ -214,18 +225,17 @@ Cursor format:
   - key: `["comments", postId]`
   - fetch with cursor
 - For each top-level comment, render replies block:
-  - initially show first N replies (e.g., 1) if available
+  - show the first page of replies (current UI uses `limit=5`)
   - "Load more replies" uses `useInfiniteQuery`:
     - key: `["replies", topCommentId]`
 
 ### Reply Composer
 - Reply to top-level: create reply with `parent_id = topCommentId`.
 - Reply to a reply: set `reply_to_*` fields + still use `parent_id = topCommentId`.
-- UI shows prefix вЂњName,вЂќ if `reply_to_user` exists.
+- UI shows `@username` prefix if `reply_to_user` exists.
 
-### Optimistic Create (MVP)
-- Insert a temporary вЂњpendingвЂќ comment into the list (top-level or replies).
-- Replace with server response on success; rollback on error.
+### Optimistic Create (Optional)
+- Not implemented yet. Current behavior is refetch-based after create.
 
 ### Deleted Comments Rendering
 - Not applicable for hard delete (MVP). Deleted comments disappear.
@@ -286,7 +296,7 @@ Backend:
 Integration / E2E (optional):
 - Create top-level comment в†’ appears in post detail
 - Reply to top-level в†’ appears nested
-- Reply to reply в†’ appears under same top-level with вЂњName,вЂќ prefix
+- Reply to reply -> appears under same top-level with `@username` prefix
 
 ## Execution Plan (Step-by-step)
 Recommended sequence to keep risk low and keep the app runnable at each step.
@@ -353,12 +363,12 @@ Recommended sequence to keep risk low and keep the app runnable at each step.
 7. Frontend Comments UI
    - Render top-level comments sorted by server order.
    - For each top-level comment:
-     - show first N replies (e.g., 1)
+     - show first page of replies (current UI uses `limit=5`)
      - "Load more replies" loads next pages
    - Reply UX:
      - Reply to top-level: `parent_id = topCommentId`
      - Reply to reply: still `parent_id = topCommentId`, set `reply_to_*`
-     - Render вЂњName,вЂќ prefix when `reply_to_user` exists.
+  - Render `@username` prefix when `reply_to_user` exists.
    - Comment likes:
      - like/unlike toggle
      - optimistic updates on count and state

@@ -46,7 +46,13 @@ import {
   updateAvatar,
   updateCover,
 } from "./endpoints";
-import { clearToken, getToken, setToken, toApiError, type ApiError } from "./client";
+import {
+  clearToken,
+  getToken,
+  setToken,
+  toApiError,
+  type ApiError,
+} from "./client";
 
 type Token = components["schemas"]["Token"];
 type User = components["schemas"]["User"];
@@ -278,7 +284,10 @@ export function useTopLevelCommentsQuery(
   });
 }
 
-export function useRepliesQuery(commentId?: number, params: RepliesListParams = {}) {
+export function useRepliesQuery(
+  commentId?: number,
+  params: RepliesListParams = {},
+) {
   return useInfiniteQuery<CommentListResponse, ApiError>({
     queryKey: queryKeys.replies.list(commentId ?? 0, params),
     queryFn: ({ pageParam }) =>
@@ -523,8 +532,14 @@ export function useToggleCommentLikeMutation() {
       isLiked: boolean;
     },
     {
-      previousComments: [QueryKey, InfiniteData<CommentListResponse> | undefined][];
-      previousReplies: [QueryKey, InfiniteData<CommentListResponse> | undefined][];
+      previousComments: [
+        QueryKey,
+        InfiniteData<CommentListResponse> | undefined,
+      ][];
+      previousReplies: [
+        QueryKey,
+        InfiniteData<CommentListResponse> | undefined,
+      ][];
     }
   >({
     mutationFn: async ({ commentId, isLiked }) => {
@@ -539,18 +554,21 @@ export function useToggleCommentLikeMutation() {
         queryKey: queryKeys.comments.detail(variables.postId),
       });
 
-      const previousComments =
-        queryClient.getQueriesData<InfiniteData<CommentListResponse>>({
-          queryKey: queryKeys.comments.detail(variables.postId),
-        });
+      const previousComments = queryClient.getQueriesData<
+        InfiniteData<CommentListResponse>
+      >({
+        queryKey: queryKeys.comments.detail(variables.postId),
+      });
 
       for (const [key] of previousComments) {
-        queryClient.setQueryData<InfiniteData<CommentListResponse>>(key, (oldData) =>
-          updateCommentInInfiniteData(
-            oldData,
-            variables.commentId,
-            variables.isLiked,
-          ),
+        queryClient.setQueryData<InfiniteData<CommentListResponse>>(
+          key,
+          (oldData) =>
+            updateCommentInInfiniteData(
+              oldData,
+              variables.commentId,
+              variables.isLiked,
+            ),
         );
       }
 
@@ -562,10 +580,11 @@ export function useToggleCommentLikeMutation() {
         await queryClient.cancelQueries({
           queryKey: queryKeys.replies.detail(variables.parentId),
         });
-        previousReplies =
-          queryClient.getQueriesData<InfiniteData<CommentListResponse>>({
-            queryKey: queryKeys.replies.detail(variables.parentId),
-          });
+        previousReplies = queryClient.getQueriesData<
+          InfiniteData<CommentListResponse>
+        >({
+          queryKey: queryKeys.replies.detail(variables.parentId),
+        });
 
         for (const [key] of previousReplies) {
           queryClient.setQueryData<InfiniteData<CommentListResponse>>(

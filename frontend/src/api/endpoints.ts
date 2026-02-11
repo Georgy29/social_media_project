@@ -113,9 +113,12 @@ export async function getMutualsPreview(
   username: string,
   params: MutualsPreviewQuery = {},
 ): Promise<MutualsPreview> {
-  const path = withQuery(`/users/${encodeURIComponent(username)}/mutuals/preview`, {
-    limit: params?.limit,
-  });
+  const path = withQuery(
+    `/users/${encodeURIComponent(username)}/mutuals/preview`,
+    {
+      limit: params?.limit,
+    },
+  );
 
   return apiFetch<MutualsPreview>(path);
 }
@@ -144,7 +147,9 @@ export async function getFeed(
   >(path);
 }
 
-export async function getPostWithCounts(postId: number): Promise<PostWithCounts> {
+export async function getPostWithCounts(
+  postId: number,
+): Promise<PostWithCounts> {
   return apiFetch<
     paths["/posts/{post_id}/with_counts"]["get"]["responses"][200]["content"]["application/json"]
   >(`/posts/${postId}/with_counts`);

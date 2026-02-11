@@ -54,7 +54,9 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
 
   const profile = profileQuery.data;
-  const joinedLabel = profile?.created_at ? formatDate(profile.created_at) : null;
+  const joinedLabel = profile?.created_at
+    ? formatDate(profile.created_at)
+    : null;
   const isOwner = Boolean(
     profile?.username && meQuery.data?.username === profile.username,
   );

@@ -43,9 +43,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     if (error.status === 401) {
       return <Navigate to="/login" replace state={{ from: location }} />;
     }
-    return (
-      <FullPageStatus message={error.message} />
-    );
+    return <FullPageStatus message={error.message} />;
   }
 
   return <>{children}</>;
@@ -73,9 +71,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Suspense
-        fallback={<FullPageStatus message="Loading..." />}
-      >
+      <Suspense fallback={<FullPageStatus message="Loading..." />}>
         <Routes>
           <Route path="/" element={<Navigate to="/feed" replace />} />
           <Route

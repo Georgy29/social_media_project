@@ -1,6 +1,7 @@
 # Social Media MVP
 
 A small full-stack social feed demo: FastAPI + Postgres + Vite/React.
+Includes posts, reactions, profiles, media uploads, and 2-level threaded comments.
 
 ## Quickstart (API + Postgres via Docker)
 1) Create `.env` from the example:
@@ -44,7 +45,7 @@ If Vite errors with `Failed to resolve import "motion/react"`: run `npm install`
 
 ## Tradeoffs (intentional MVP choices)
 - Auth is simple: access token stored in `localStorage` (no refresh tokens / rotation yet).
-- Product scope is intentionally small: no comments/notifications/search (yet).
+- Product scope is intentionally small: no notifications/search (yet).
 - Infra stays minimal: no Redis/background jobs; media uses S3 presigned uploads.
 - Feed is uncached (viewer-specific flags like likes/reposts make caching trickier).
 

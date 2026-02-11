@@ -28,7 +28,8 @@ export function toApiError(
   fallbackMessage = "Network error. Please try again.",
 ): ApiError {
   if (error instanceof ApiError) return error;
-  if (error instanceof Error) return new ApiError(fallbackStatus, error.message);
+  if (error instanceof Error)
+    return new ApiError(fallbackStatus, error.message);
   if (isApiError(error)) {
     const status =
       typeof error.status === "number" ? error.status : fallbackStatus;

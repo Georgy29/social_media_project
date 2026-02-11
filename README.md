@@ -1,7 +1,33 @@
 # Social Media MVP
 
 A small full-stack social feed demo: FastAPI + Postgres + Vite/React.
-Includes posts, reactions, profiles, media uploads, and 2-level threaded comments.
+Posts, reactions, profiles, media uploads, bookmarks, and 2-level threaded comments.
+
+**Live demo:** `https://social-media-project-mu.vercel.app/login`
+
+[![Live demo preview](docs/demo-preview.svg)](https://social-media-project-mu.vercel.app/login)
+
+## What You Can Do
+- Register / login
+- Create posts (text or image), edit/delete your own posts
+- Like / repost and undo
+- Save posts to Bookmarks
+- Open a post detail page and comment/reply (2-level threads)
+- Like comments
+- Follow/unfollow and browse Public vs Subscriptions feed
+
+## Tech Stack
+- Backend: FastAPI, SQLAlchemy, Alembic, Postgres
+- Frontend: React + Vite + TypeScript, TanStack Query, Tailwind, shadcn/ui
+- Media: S3 presigned uploads
+
+<details>
+<summary><strong>Implementation Notes</strong></summary>
+
+- Feed uses offset pagination (`skip`/`limit`) for simple "page N" navigation.
+- Comments use cursor pagination for stable ordering (`like_count DESC, created_at ASC, id ASC`).
+
+</details>
 
 ## Quickstart (API + Postgres via Docker)
 1) Create `.env` from the example:
@@ -58,6 +84,6 @@ Current storage is `memory://` (in-process), which is appropriate for a single-i
 
 To scale beyond a single process, switch `RATE_LIMIT_STORAGE_URI` to Redis (e.g. `redis://...`).
 
-## Release docs
-- Pre-release gate checklist: `docs/cleanup.md`
-- Step-by-step wiring + deploy: `docs/release-1.md`
+## Deployment (Notes)
+This project is intended to run on a small VM (e.g. Lightsail) using Docker Compose.
+See `docs/deploy/lightsail.md` for the deployment notes used for this demo.

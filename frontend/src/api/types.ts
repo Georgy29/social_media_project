@@ -764,6 +764,11 @@ export interface components {
             cover_url?: string | null;
             /** Bio */
             bio?: string | null;
+            /**
+             * Is Admin
+             * @default false
+             */
+            is_admin: boolean;
         };
         /** UserCreate */
         UserCreate: {

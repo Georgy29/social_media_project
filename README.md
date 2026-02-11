@@ -1,6 +1,7 @@
 # Social Media MVP
 
 A small full-stack social feed demo: FastAPI + Postgres + Vite/React.
+Deployed on AWS Lightsail
 Posts, reactions, profiles, media uploads, bookmarks, and 2-level threaded comments.
 
 **Live demo:** `https://social-media-project-mu.vercel.app/login`

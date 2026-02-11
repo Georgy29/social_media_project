@@ -717,7 +717,7 @@ export function PostCard({
               </Link>
             </ProfileHoverCard>
             <div
-              className="mt-1 pl-9 text-sm leading-5 break-words text-muted-foreground line-clamp-2"
+              className="mt-1 pl-9 text-sm leading-5 break-words text-foreground/90 line-clamp-2"
               title={topCommentPreview.content}
             >
               {topCommentSnippet}

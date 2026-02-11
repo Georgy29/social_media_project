@@ -100,7 +100,11 @@ export function FeedRightRail() {
                 <li>Create text or image posts</li>
                 <li>Edit/delete your posts (within the edit window)</li>
                 <li>Like/repost (and undo)</li>
+                <li>Comment and reply to threads</li>
+                <li>Like comments</li>
                 <li>Browse public vs subscriptions feed</li>
+                <li>Save posts to Bookmarks</li>
+                <li>Open bookmarks page</li>
                 <li>Open profiles and follow/unfollow</li>
               </ul>
             </AccordionContent>
@@ -109,9 +113,9 @@ export function FeedRightRail() {
             <AccordionTrigger>{"What\u2019s Next?"}</AccordionTrigger>
             <AccordionContent>
               <ul className="space-y-1">
-                <li>Bookmarks: persisted state + a real page</li>
                 <li>Search: people and posts</li>
-                <li>Profile avatar group: mutuals/suggestions preview</li>
+                <li>Notifications</li>
+                <li>Comment sorting toggles</li>
               </ul>
             </AccordionContent>
           </AccordionItem>

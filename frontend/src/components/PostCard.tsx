@@ -127,6 +127,14 @@ export function PostCard({
   const profilePath = `/profile/${encodeURIComponent(post.owner_username)}`;
   const postDetailPath = `/posts/${post.id}`;
   const topCommentPreview = post.top_comment_preview ?? null;
+  const truncateText = (value: string, maxLength: number) => {
+    const trimmed = value.trim();
+    if (trimmed.length <= maxLength) return trimmed;
+    return `${trimmed.slice(0, maxLength - 3)}...`;
+  };
+  const topCommentSnippet = topCommentPreview
+    ? truncateText(topCommentPreview.content, 160)
+    : null;
   const [topCommentLikeState, setTopCommentLikeState] = useState<{
     liked: boolean;
     count: number;
@@ -703,8 +711,11 @@ export function PostCard({
                 @{topCommentPreview.user.username}
               </Link>
             </ProfileHoverCard>
-            <div className="mt-1 pl-9 text-sm leading-5 break-words">
-              {topCommentPreview.content}
+            <div
+              className="mt-1 pl-9 text-sm leading-5 break-words text-muted-foreground line-clamp-2"
+              title={topCommentPreview.content}
+            >
+              {topCommentSnippet}
             </div>
             <div className="mt-1.5 pl-9 flex items-center justify-between gap-3">
               <div className="text-muted-foreground/70 text-[11px]">

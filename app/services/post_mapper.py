@@ -35,7 +35,9 @@ def _coerce_post_with_counts_row(
     return PostWithCountsRow(*row)
 
 
-def to_post_with_counts(row: Sequence[Any] | PostWithCountsRow) -> schemas.PostWithCounts:
+def to_post_with_counts(
+    row: Sequence[Any] | PostWithCountsRow,
+) -> schemas.PostWithCounts:
     data = _coerce_post_with_counts_row(row)
 
     top_comment_preview = None

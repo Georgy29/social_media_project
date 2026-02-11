@@ -11,7 +11,9 @@ def build_posts_with_counts_query(db: Session, current_user: models.User):
     top_comment_liked_by_me = aliased(models.CommentLike)
 
     likes_subq = (
-        db.query(models.Like.post_id, func.count(models.Like.user_id).label("likes_count"))
+        db.query(
+            models.Like.post_id, func.count(models.Like.user_id).label("likes_count")
+        )
         .group_by(models.Like.post_id)
         .subquery()
     )

@@ -57,6 +57,7 @@ export default function FeedPage() {
   } = usePostCardActions();
   const [composerOpen, setComposerOpen] = useState(false);
   const username = meQuery.data?.username ?? "guest";
+  const isAdmin = Boolean(meQuery.data?.is_admin);
   const sidebarUser = getSidebarUser(meQuery.data, {
     name: username,
     handle: username,
@@ -181,6 +182,7 @@ export default function FeedPage() {
                   showCommentPreview
                   pending={isPostMutating(post.id)}
                   isOwner={meQuery.data?.id === post.owner_id}
+                  canDelete={isAdmin}
                   onToggleLike={handleToggleLike}
                   onToggleRetweet={handleToggleRetweet}
                   onToggleBookmark={handleToggleBookmark}

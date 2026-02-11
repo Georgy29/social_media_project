@@ -60,6 +60,7 @@ type EditingTarget = {
 type CommentThreadProps = {
   postId: number;
   currentUserId?: number;
+  currentUserIsAdmin?: boolean;
   autoFocusComposer?: boolean;
   focusRequestKey?: number;
 };
@@ -316,6 +317,7 @@ function CommentEditForm({
 function RepliesSection({
   topCommentId,
   currentUserId,
+  currentUserIsAdmin = false,
   editingTarget,
   editError,
   onStartEdit,
@@ -331,6 +333,7 @@ function RepliesSection({
 }: {
   topCommentId: number;
   currentUserId?: number;
+  currentUserIsAdmin?: boolean;
   editingTarget: EditingTarget | null;
   editError: string | null;
   onStartEdit: (comment: CommentResponse, parentId?: number | null) => void;
@@ -369,6 +372,8 @@ function RepliesSection({
     <div className="ml-7 mt-1 space-y-1 border-l border-border/50 pl-3">
       {replies.map((reply) => {
         const isEditing = editingTarget?.commentId === reply.id;
+        const isOwner = currentUserId === reply.user.id;
+        const canDelete = isOwner || currentUserIsAdmin;
 
         return (
           <div key={reply.id}>
@@ -385,12 +390,12 @@ function RepliesSection({
               <CommentItem
                 comment={reply}
                 nested
-                canManage={currentUserId === reply.user.id}
+                canManage={isOwner || currentUserIsAdmin}
                 onReply={() => onReplyToReply(reply)}
                 onToggleLike={() => onToggleLike(reply, topCommentId)}
                 isLikeUpdating={isLikeUpdating(reply.id)}
-                onEdit={() => onStartEdit(reply, topCommentId)}
-                onDelete={() => onDelete(reply, topCommentId)}
+                onEdit={isOwner ? () => onStartEdit(reply, topCommentId) : undefined}
+                onDelete={canDelete ? () => onDelete(reply, topCommentId) : undefined}
                 isDeletePending={isDeletePending(reply.id)}
               />
             )}
@@ -416,6 +421,7 @@ function RepliesSection({
 export function CommentThread({
   postId,
   currentUserId,
+  currentUserIsAdmin = false,
   autoFocusComposer = false,
   focusRequestKey,
 }: CommentThreadProps) {
@@ -702,6 +708,8 @@ export function CommentThread({
           <div className="divide-y divide-border/50">
             {topComments.map((comment) => {
               const isEditing = editingTarget?.commentId === comment.id;
+              const isOwner = currentUserId === comment.user.id;
+              const canDelete = isOwner || currentUserIsAdmin;
 
               return (
                 <div key={comment.id}>
@@ -717,14 +725,14 @@ export function CommentThread({
                   ) : (
                     <CommentItem
                       comment={comment}
-                      canManage={currentUserId === comment.user.id}
+                      canManage={isOwner || currentUserIsAdmin}
                       onReply={() => openReplyToTopComment(comment)}
                       onToggleLike={() =>
                         handleToggleCommentLike(comment, null)
                       }
                       isLikeUpdating={isLikeUpdating(comment.id)}
-                      onEdit={() => startEditingComment(comment, null)}
-                      onDelete={() => handleDeleteComment(comment, null)}
+                      onEdit={isOwner ? () => startEditingComment(comment, null) : undefined}
+                      onDelete={canDelete ? () => handleDeleteComment(comment, null) : undefined}
                       isDeletePending={isDeletePending(comment.id)}
                     />
                   )}
@@ -732,6 +740,7 @@ export function CommentThread({
                   <RepliesSection
                     topCommentId={comment.id}
                     currentUserId={currentUserId}
+                    currentUserIsAdmin={currentUserIsAdmin}
                     editingTarget={editingTarget}
                     editError={editError}
                     onStartEdit={startEditingComment}

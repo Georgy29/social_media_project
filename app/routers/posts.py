@@ -68,7 +68,9 @@ def delete_existing_post(
     db: db_dependency,
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    post = get_owned_post_or_404(db, post_id, current_user, action="delete")
+    post = get_post_or_404(db, post_id)
+    if post.owner_id != current_user.id and not current_user.is_admin:
+        exceptions.raise_forbidden_exception("Not authorized to delete this post")
 
     db.delete(post)
     db.commit()

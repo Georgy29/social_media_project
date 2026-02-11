@@ -669,7 +669,10 @@ export interface components {
             content: string;
             /** Like Count */
             like_count: number;
-            /** Is Liked */
+            /**
+             * Is Liked
+             * @default false
+             */
             is_liked: boolean;
             /**
              * Created At

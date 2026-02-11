@@ -60,6 +60,7 @@ export default function ProfilePage() {
   const isOwner = Boolean(
     profile?.username && meQuery.data?.username === profile.username,
   );
+  const isAdmin = Boolean(meQuery.data?.is_admin);
   const isFollowedByViewer = profile?.is_followed_by_viewer ?? false;
   const profileAvatarUrl =
     profile?.avatar_url ?? (isOwner ? meQuery.data?.avatar_url : null);
@@ -188,6 +189,7 @@ export default function ProfilePage() {
             key={username ?? "profile"}
             username={username}
             meId={meQuery.data?.id}
+            meIsAdmin={isAdmin}
             onToggleLike={handleToggleLike}
             onToggleRetweet={handleToggleRetweet}
             onToggleBookmark={handleToggleBookmark}

@@ -71,6 +71,7 @@ export default function PostDetailPage() {
   }, [location.key, shouldFocusCommentComposer]);
 
   const username = meQuery.data?.username ?? "guest";
+  const isAdmin = Boolean(meQuery.data?.is_admin);
   const sidebarUser = getSidebarUser(meQuery.data, {
     name: username,
     handle: username,
@@ -166,6 +167,7 @@ export default function PostDetailPage() {
                 post={postQuery.data}
                 pending={isPostMutating(postQuery.data.id)}
                 isOwner={meQuery.data?.id === postQuery.data.owner_id}
+                canDelete={isAdmin}
                 enableOpen={false}
                 onCommentClick={() => setCommentFocusKey((value) => value + 1)}
                 onToggleLike={handleToggleLike}
@@ -178,6 +180,7 @@ export default function PostDetailPage() {
               <CommentThread
                 postId={postIdNumber}
                 currentUserId={meQuery.data?.id}
+                currentUserIsAdmin={isAdmin}
                 autoFocusComposer={shouldFocusCommentComposer}
                 focusRequestKey={commentFocusKey}
               />

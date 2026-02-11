@@ -64,6 +64,7 @@ export function PostCard({
   onDelete,
   onUpdate,
   isOwner = false,
+  canDelete = false,
   pending = false,
   showCommentPreview = false,
   enableOpen = true,
@@ -73,6 +74,7 @@ export function PostCard({
   post: PostWithCounts;
   pending?: boolean;
   isOwner?: boolean;
+  canDelete?: boolean;
   showCommentPreview?: boolean;
   enableOpen?: boolean;
   onCommentClick?: () => void;
@@ -122,6 +124,7 @@ export function PostCard({
   const [topCommentLikeCountDirection, setTopCommentLikeCountDirection] =
     useState<"up" | "down">("up");
   const [topCommentLikeBusy, setTopCommentLikeBusy] = useState(false);
+  const canShowActions = isOwner || canDelete;
   const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase();
   const avatarUrl = post.owner_avatar_url ?? null;
   const profilePath = `/profile/${encodeURIComponent(post.owner_username)}`;
@@ -604,7 +607,7 @@ export function PostCard({
             Comment
           </Button>
         </div>
-        {isOwner ? (
+        {canShowActions ? (
           <div className="ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -619,17 +622,19 @@ export function PostCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setEditing(true);
-                    setDraft(post.content);
-                    setError(null);
-                  }}
-                >
-                  <IconEdit className="h-4 w-4" aria-hidden="true" />
-                  Edit
-                </DropdownMenuItem>
-                {onDelete ? (
+                {isOwner ? (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setEditing(true);
+                      setDraft(post.content);
+                      setError(null);
+                    }}
+                  >
+                    <IconEdit className="h-4 w-4" aria-hidden="true" />
+                    Edit
+                  </DropdownMenuItem>
+                ) : null}
+                {onDelete && canShowActions ? (
                   <DropdownMenuItem
                     variant="destructive"
                     onSelect={() => setDeleteOpen(true)}
@@ -762,7 +767,7 @@ export function PostCard({
           </div>
         </div>
       ) : null}
-      {onDelete ? (
+      {onDelete && canShowActions ? (
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogContent size="sm">
             <AlertDialogHeader>

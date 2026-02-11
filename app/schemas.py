@@ -15,6 +15,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     created_at: datetime
+    is_admin: bool = False
     avatar_url: Optional[str] = None
     cover_url: Optional[str] = None
     bio: Optional[str] = None

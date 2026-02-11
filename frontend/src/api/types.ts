@@ -315,6 +315,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/posts/{post_id}/with_counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Post detail with reaction counts */
+        get: operations["read_post_with_counts_posts__post_id__with_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/with_counts/": {
         parameters: {
             query?: never;
@@ -421,6 +438,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/posts/{post_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Top Level Comments */
+        get: operations["list_top_level_comments_posts__post_id__comments_get"];
+        put?: never;
+        /** Create Comment */
+        post: operations["create_comment_posts__post_id__comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Comment */
+        delete: operations["delete_comment_comments__comment_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Comment */
+        patch: operations["update_comment_comments__comment_id__patch"];
+        trace?: never;
+    };
+    "/comments/{comment_id}/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Replies */
+        get: operations["list_replies_comments__comment_id__replies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/{comment_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Like Comment */
+        post: operations["like_comment_comments__comment_id__like_post"];
+        /** Unlike Comment */
+        delete: operations["unlike_comment_comments__comment_id__like_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -447,6 +535,61 @@ export interface components {
             client_id?: string | null;
             /** Client Secret */
             client_secret?: string | null;
+        };
+        /** CommentCreate */
+        CommentCreate: {
+            /** Content */
+            content: string;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Reply To Comment Id */
+            reply_to_comment_id?: number | null;
+            /** Reply To User Id */
+            reply_to_user_id?: number | null;
+        };
+        /** CommentListResponse */
+        CommentListResponse: {
+            /** Items */
+            items: components["schemas"]["CommentResponse"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** CommentResponse */
+        CommentResponse: {
+            /** Id */
+            id: number;
+            /** Post Id */
+            post_id: number;
+            user: components["schemas"]["UserPreview"];
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Reply To Comment Id */
+            reply_to_comment_id?: number | null;
+            reply_to_user?: components["schemas"]["UserPreview"] | null;
+            /** Content */
+            content: string;
+            /** Like Count */
+            like_count: number;
+            /**
+             * Is Liked
+             * @default false
+             */
+            is_liked: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** CommentUpdate */
+        CommentUpdate: {
+            /** Content */
+            content: string;
         };
         /** CoverUpdate */
         CoverUpdate: {
@@ -518,6 +661,26 @@ export interface components {
             /** Media Id */
             media_id?: number | null;
         };
+        /** PostTopCommentPreview */
+        PostTopCommentPreview: {
+            /** Id */
+            id: number;
+            /** Content */
+            content: string;
+            /** Like Count */
+            like_count: number;
+            /**
+             * Is Liked
+             * @default false
+             */
+            is_liked: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            user: components["schemas"]["UserPreview"];
+        };
         /** PostUpdate */
         PostUpdate: {
             /** Content */
@@ -552,6 +715,7 @@ export interface components {
             is_bookmarked: boolean;
             /** Media Url */
             media_url?: string | null;
+            top_comment_preview?: components["schemas"]["PostTopCommentPreview"] | null;
         };
         /** SuggestionsResponse */
         SuggestionsResponse: {
@@ -600,6 +764,11 @@ export interface components {
             cover_url?: string | null;
             /** Bio */
             bio?: string | null;
+            /**
+             * Is Admin
+             * @default false
+             */
+            is_admin: boolean;
         };
         /** UserCreate */
         UserCreate: {
@@ -1297,6 +1466,37 @@ export interface operations {
             };
         };
     };
+    read_post_with_counts_posts__post_id__with_counts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostWithCounts"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_posts_with_counts_posts_with_counts__get: {
         parameters: {
             query?: {
@@ -1501,6 +1701,231 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PostWithCounts"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_top_level_comments_posts__post_id__comments_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                post_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_comment_posts__post_id__comments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_comment_comments__comment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_comment_comments__comment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_replies_comments__comment_id__replies_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    like_comment_comments__comment_id__like_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlike_comment_comments__comment_id__like_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -38,6 +38,7 @@ def read_me(current_user: models.User = Depends(auth.get_current_user)):
         username=current_user.username,
         email=current_user.email,
         created_at=current_user.created_at,
+        is_admin=current_user.is_admin,
         avatar_url=avatar_url,
         cover_url=cover_url,
         bio=current_user.bio,
@@ -248,6 +249,7 @@ def create_user(
         username=new_user.username,
         email=new_user.email,
         created_at=new_user.created_at,
+        is_admin=new_user.is_admin,
         avatar_url=None,
         cover_url=None,
         bio=None,
@@ -319,6 +321,7 @@ def update_avatar(
             username=current_user.username,
             email=current_user.email,
             created_at=current_user.created_at,
+            is_admin=current_user.is_admin,
             avatar_url=None,
             cover_url=cover_url,
             bio=current_user.bio,
@@ -344,6 +347,7 @@ def update_avatar(
         username=current_user.username,
         email=current_user.email,
         created_at=current_user.created_at,
+        is_admin=current_user.is_admin,
         avatar_url=media.public_url,
         cover_url=current_user.profile_cover_media.public_url
         if current_user.profile_cover_media
@@ -373,6 +377,7 @@ def update_cover(
             username=current_user.username,
             email=current_user.email,
             created_at=current_user.created_at,
+            is_admin=current_user.is_admin,
             avatar_url=avatar_url,
             cover_url=None,
             bio=current_user.bio,
@@ -398,6 +403,7 @@ def update_cover(
         username=current_user.username,
         email=current_user.email,
         created_at=current_user.created_at,
+        is_admin=current_user.is_admin,
         avatar_url=current_user.avatar_media.public_url
         if current_user.avatar_media
         else None,
@@ -429,6 +435,7 @@ def update_profile(
         username=current_user.username,
         email=current_user.email,
         created_at=current_user.created_at,
+        is_admin=current_user.is_admin,
         avatar_url=current_user.avatar_media.public_url
         if current_user.avatar_media
         else None,

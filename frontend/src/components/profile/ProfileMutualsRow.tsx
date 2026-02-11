@@ -52,7 +52,15 @@ export function ProfileMutualsRow({
     return null;
   }
 
+  if (shouldFetchSuggestions && suggestionsQuery.isPending) {
+    return null;
+  }
+
   if (shouldFetchSuggestions && suggestionsQuery.isError) {
+    return null;
+  }
+
+  if (shouldFetchSuggestions && suggestions.length === 0) {
     return null;
   }
 

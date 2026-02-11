@@ -1,6 +1,15 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Index,
+)
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -50,6 +59,19 @@ class User(Base):
         backref="following",
     )
 
+    comments = relationship(
+        "Comment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="Comment.user_id",
+    )
+    comment_likes = relationship(
+        "CommentLike",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="CommentLike.user_id",
+    )
+
 
 class Post(Base):
     __tablename__ = "posts"
@@ -76,6 +98,12 @@ class Post(Base):
     )
     bookmarks = relationship(
         "Bookmark",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    comments = relationship(
+        "Comment",
         back_populates="post",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -142,3 +170,86 @@ class Bookmark(Base):
 
     user = relationship("User", back_populates="bookmarks")
     post = relationship("Post", back_populates="bookmarks")
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+    __table_args__ = (
+        Index(
+            "ix_comments_post_parent_sort",
+            "post_id",
+            "parent_id",
+            "like_count",
+            "created_at",
+            "id",
+        ),
+        Index(
+            "ix_comments_parent_sort",
+            "parent_id",
+            "like_count",
+            "created_at",
+            "id",
+        ),
+        Index("ix_comments_reply_to_comment", "reply_to_comment_id"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    post_id = Column(
+        Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    parent_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True
+    )
+    reply_to_comment_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="SET NULL"), nullable=True
+    )
+    reply_to_user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
+    content = Column(String(400), nullable=False)
+    like_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    user = relationship("User", back_populates="comments", foreign_keys=[user_id])
+    post = relationship("Post", back_populates="comments")
+    parent = relationship(
+        "Comment", remote_side=[id], foreign_keys=[parent_id], backref="replies"
+    )
+    reply_to_comment = relationship(
+        "Comment", remote_side=[id], foreign_keys=[reply_to_comment_id]
+    )
+    reply_to_user = relationship("User", foreign_keys=[reply_to_user_id])
+    comment_likes = relationship(
+        "CommentLike",
+        back_populates="comment",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class CommentLike(Base):
+    __tablename__ = "comment_likes"
+
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    comment_id = Column(
+        Integer, ForeignKey("comments.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="comment_likes")
+    comment = relationship("Comment", back_populates="comment_likes")

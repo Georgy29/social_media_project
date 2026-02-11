@@ -3,8 +3,8 @@ FROM python:3.12-slim
 WORKDIR /code
 
 ARG REQUIREMENTS_FILE=app/requirements-prod.txt
-COPY ${REQUIREMENTS_FILE} /code/app/requirements.txt
-RUN pip install --no-cache-dir -r /code/app/requirements.txt
+COPY app/requirements*.txt /code/app/
+RUN pip install --no-cache-dir -r /code/${REQUIREMENTS_FILE}
 
 COPY . /code
 RUN pip install --no-cache-dir -e .

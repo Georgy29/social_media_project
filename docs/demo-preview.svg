@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a" />
+      <stop offset="1" stop-color="#0b1324" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="72" y="72" width="1056" height="486" rx="28" fill="none" stroke="#334155" stroke-width="3" />
+
+  <!-- Simple logo mark (matches the in-app Logo style) -->
+  <g transform="translate(120 134)">
+    <rect x="0" y="0" width="56" height="56" rx="14" fill="#0ea5e9" />
+    <rect x="16" y="16" width="8" height="8" rx="2" fill="#0b1324" opacity="0.95" />
+    <rect x="32" y="16" width="8" height="8" rx="2" fill="#0b1324" opacity="0.95" />
+    <rect x="16" y="32" width="8" height="8" rx="2" fill="#0b1324" opacity="0.95" />
+    <rect x="32" y="32" width="8" height="8" rx="2" fill="#0b1324" opacity="0.95" />
+  </g>
+
+  <text x="190" y="190" fill="#e2e8f0" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="44">
+    Social Media MVP
+  </text>
+  <text x="190" y="255" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="24">
+    Click to open the live demo
+  </text>
+
+  <text x="120" y="360" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="22">
+    FastAPI + Postgres + React + Vite
+  </text>
+  <text x="120" y="400" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="22">
+    Posts, bookmarks, and threaded comments
+  </text>
+  <text x="120" y="440" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="22">
+    Image uploads via S3 presigned URLs
+  </text>
+</svg>

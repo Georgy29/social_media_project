@@ -38,9 +38,10 @@ export default function RegisterPage() {
                     toast.success("Account created. Welcome!");
                     navigate(fromPathname, { replace: true });
                   },
-                  onError: (e: ApiError) => {
-                    setError(e.message);
-                    toast.error(e.message);
+                  onError: () => {
+                    toast.error(
+                      "Account created, but auto-login failed. Please log in manually.",
+                    );
                     navigate("/login", { replace: true });
                   },
                 },

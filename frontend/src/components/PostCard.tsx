@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   IconBookmark,
   IconBookmarkFilled,
@@ -7,14 +13,19 @@ import {
   IconEdit,
   IconHeart,
   IconHeartFilled,
+  IconMessageCircle,
   IconRepeat,
   IconTrash,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 import type { components } from "@/api/types";
+import { useToggleCommentLikeMutation } from "@/api/queries";
 
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/date";
+import { getRouteScrollKey, rememberRouteScroll } from "@/lib/route-scroll";
+import { AnimatedCount } from "@/components/AnimatedCount";
 import { ProfileHoverCard } from "@/components/ProfileHoverCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -30,6 +41,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -52,11 +64,21 @@ export function PostCard({
   onDelete,
   onUpdate,
   isOwner = false,
+  canDelete = false,
   pending = false,
+  showCommentPreview = false,
+  enableOpen = true,
+  onCommentClick,
+  styleMode = "card",
 }: {
   post: PostWithCounts;
   pending?: boolean;
   isOwner?: boolean;
+  canDelete?: boolean;
+  showCommentPreview?: boolean;
+  enableOpen?: boolean;
+  onCommentClick?: () => void;
+  styleMode?: "card" | "timeline";
   onToggleLike: (post: PostWithCounts) => void;
   onToggleRetweet: (post: PostWithCounts) => void;
   onToggleBookmark?: (
@@ -66,10 +88,9 @@ export function PostCard({
   onDelete?: (postId: number) => Promise<void>;
   onUpdate?: (postId: number, content: string) => Promise<unknown>;
 }) {
-  const ts = new Date(post.timestamp);
-  const timeLabel = Number.isNaN(ts.valueOf())
-    ? post.timestamp
-    : ts.toLocaleString();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const timeLabel = formatDateTime(post.timestamp);
   const MAX_POST_LENGTH = 280;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.content);
@@ -98,15 +119,47 @@ export function PostCard({
   const [retweetCountDirection, setRetweetCountDirection] = useState<
     "up" | "down"
   >("up");
+  const [topCommentLikePulseKey, setTopCommentLikePulseKey] = useState(0);
+  const [topCommentLikeCountKey, setTopCommentLikeCountKey] = useState(0);
+  const [topCommentLikeCountDirection, setTopCommentLikeCountDirection] =
+    useState<"up" | "down">("up");
+  const [topCommentLikeBusy, setTopCommentLikeBusy] = useState(false);
+  const canShowActions = isOwner || canDelete;
   const avatarLabel = (post.owner_username || "?").slice(0, 2).toUpperCase();
   const avatarUrl = post.owner_avatar_url ?? null;
   const profilePath = `/profile/${encodeURIComponent(post.owner_username)}`;
+  const postDetailPath = `/posts/${post.id}`;
+  const topCommentPreview = post.top_comment_preview ?? null;
+  const truncateText = (value: string, maxLength: number) => {
+    const trimmed = value.trim();
+    if (trimmed.length <= maxLength) return trimmed;
+    return `${trimmed.slice(0, maxLength - 3)}...`;
+  };
+  const topCommentSnippet = topCommentPreview
+    ? truncateText(topCommentPreview.content, 160)
+    : null;
+  const [topCommentLikeState, setTopCommentLikeState] = useState<{
+    liked: boolean;
+    count: number;
+  } | null>(
+    topCommentPreview
+      ? {
+          liked: Boolean(topCommentPreview.is_liked),
+          count: topCommentPreview.like_count,
+        }
+      : null,
+  );
+  const toggleCommentLikeMutation = useToggleCommentLikeMutation();
   const mediaAlt = (() => {
     const snippet = post.content.trim().replace(/\s+/g, " ").slice(0, 80);
     if (snippet) return `Post image: ${snippet}`;
     return `Post image by @${post.owner_username}`;
   })();
-  const draftTooLong = draft.trim().length > MAX_POST_LENGTH;
+  const topCommentTimeLabel = topCommentPreview
+    ? formatDateTime(topCommentPreview.created_at)
+    : null;
+  const draftTooLong = draft.length > MAX_POST_LENGTH;
+  const isTimeline = styleMode === "timeline";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -130,6 +183,21 @@ export function PostCard({
     post.retweets_count,
     post.is_bookmarked,
   ]);
+
+  useEffect(() => {
+    if (!topCommentPreview) {
+      setTopCommentLikeState(null);
+      return;
+    }
+
+    setTopCommentLikeState((current) => ({
+      liked:
+        typeof topCommentPreview.is_liked === "boolean"
+          ? topCommentPreview.is_liked
+          : (current?.liked ?? false),
+      count: topCommentPreview.like_count,
+    }));
+  }, [topCommentPreview]);
 
   const handleToggleLike = () => {
     setLikePulseKey((value) => value + 1);
@@ -164,6 +232,52 @@ export function PostCard({
     }
   };
 
+  const handleToggleTopCommentLike = (
+    event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!topCommentPreview || !topCommentLikeState) return;
+
+    if (
+      topCommentLikeBusy ||
+      (toggleCommentLikeMutation.isPending &&
+        toggleCommentLikeMutation.variables?.commentId === topCommentPreview.id)
+    ) {
+      return;
+    }
+
+    const previousState = topCommentLikeState;
+    const nextLiked = !previousState.liked;
+    const delta = nextLiked ? 1 : -1;
+    const nextCount = Math.max(0, previousState.count + delta);
+
+    setTopCommentLikePulseKey((value) => value + 1);
+    setTopCommentLikeCountDirection(delta > 0 ? "up" : "down");
+    setTopCommentLikeCountKey((key) => key + 1);
+    setTopCommentLikeState({ liked: nextLiked, count: nextCount });
+    setTopCommentLikeBusy(true);
+
+    toggleCommentLikeMutation.mutate(
+      {
+        commentId: topCommentPreview.id,
+        postId: post.id,
+        isLiked: previousState.liked,
+      },
+      {
+        onError: () => {
+          setTopCommentLikeState(previousState);
+          setTopCommentLikeBusy(false);
+          toast.error("Failed to update comment like");
+        },
+        onSettled: () => {
+          setTopCommentLikeBusy(false);
+        },
+      },
+    );
+  };
+
   const handleToggleBookmark = async () => {
     if (bookmarkBusy) return;
     const nextState = !bookmarked;
@@ -186,9 +300,82 @@ export function PostCard({
     }
   };
 
+  const openPostDetail = (options?: { focusCommentComposer?: boolean }) => {
+    if (!enableOpen || editing) return;
+    const fromRoute = getRouteScrollKey(location.pathname, location.search);
+    rememberRouteScroll(fromRoute);
+    navigate(postDetailPath, {
+      state: {
+        from: fromRoute,
+        focusCommentComposer: Boolean(options?.focusCommentComposer),
+      },
+    });
+  };
+
+  const isInteractiveTarget = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return false;
+    return Boolean(
+      target.closest(
+        "a,button,input,textarea,select,label,[role='button'],[role='menuitem'],[data-no-post-open='true']",
+      ),
+    );
+  };
+
+  const openComments = () => {
+    if (onCommentClick) {
+      onCommentClick();
+      return;
+    }
+    openPostDetail({ focusCommentComposer: true });
+  };
+
+  const actionButtonClass = cn(
+    "min-w-11 justify-center gap-1.5 rounded-full border-0 bg-transparent shadow-none transition-colors duration-150 hover:bg-muted/70",
+    isTimeline ? "h-7 px-1.5" : "h-8 px-2",
+  );
+  const timelineCardClass =
+    "rounded-none ring-0 bg-transparent py-2 gap-0 data-[size=sm]:gap-0 border-t border-b border-border/70 first:border-t-0 last:border-b-0";
+  const timelineContentClass = cn(
+    "px-3 pt-3 space-y-5",
+    post.media_url ? "pb-0" : "pb-3",
+  );
+  const timelineFooterClass = cn(
+    "bg-muted/20 rounded-none gap-1.5 px-3 py-1.5",
+    post.media_url ? "border-t-0" : "border-t border-border/60",
+  );
+  const timelineTopCommentClass =
+    "mx-2 my-1 rounded-md border border-border/40 bg-background px-3 py-2 hover:bg-muted/10";
+
   return (
-    <Card>
-      <CardHeader className="space-y-1">
+    <Card
+      size={isTimeline ? "sm" : "default"}
+      role={enableOpen ? "link" : undefined}
+      tabIndex={enableOpen ? 0 : undefined}
+      aria-label={`Open post ${post.id}`}
+      className={cn(
+        "transition-colors",
+        isTimeline ? timelineCardClass : "",
+        editing || !enableOpen
+          ? ""
+          : isTimeline
+            ? "cursor-pointer hover:bg-muted/30"
+            : "cursor-pointer hover:bg-muted/10",
+      )}
+      onClick={(event) => {
+        if (!enableOpen) return;
+        if (isInteractiveTarget(event.target)) return;
+        openPostDetail();
+      }}
+      onKeyDown={(event) => {
+        if (!enableOpen) return;
+        if (isInteractiveTarget(event.target)) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openPostDetail();
+        }
+      }}
+    >
+      <CardHeader className={cn("space-y-1", isTimeline ? "px-3" : "")}>
         <div className="flex items-center justify-between gap-3">
           <ProfileHoverCard
             username={post.owner_username}
@@ -214,7 +401,9 @@ export function PostCard({
           <div className="text-muted-foreground text-xs">{timeLabel}</div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent
+        className={cn("space-y-3", isTimeline ? timelineContentClass : "")}
+      >
         {editing ? (
           <div className="space-y-2">
             <Textarea
@@ -231,9 +420,9 @@ export function PostCard({
                   "text-xs tabular-nums",
                   draftTooLong ? "text-destructive" : "text-muted-foreground",
                 )}
-                aria-label={`Character count ${draft.trim().length} of ${MAX_POST_LENGTH}`}
+                aria-label={`Character count ${draft.length} of ${MAX_POST_LENGTH}`}
               >
-                {draft.trim().length}/{MAX_POST_LENGTH}
+                {draft.length}/{MAX_POST_LENGTH}
               </div>
               {draftTooLong ? (
                 <div className="text-destructive text-xs">
@@ -276,7 +465,14 @@ export function PostCard({
             </div>
           </div>
         ) : (
-          <div className="whitespace-pre-wrap break-words">{post.content}</div>
+          <div
+            className={cn(
+              "whitespace-pre-wrap break-words leading-6",
+              isTimeline ? "pl-2" : "",
+            )}
+          >
+            {post.content}
+          </div>
         )}
         {post.media_url ? (
           <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20">
@@ -293,14 +489,20 @@ export function PostCard({
         ) : null}
         {error ? <div className="text-destructive text-sm">{error}</div> : null}
       </CardContent>
-      <CardFooter className="flex items-center gap-2 px-3 py-2">
-        <div className="flex items-center gap-2">
+      <CardFooter
+        className={cn(
+          "flex items-center gap-2 px-3 py-2",
+          isTimeline ? timelineFooterClass : "",
+        )}
+      >
+        <div className="flex items-center gap-1">
           <Button
             size="xs"
-            variant="outline"
+            variant="ghost"
             aria-pressed={likeState.liked}
             aria-label={likeState.liked ? "Unlike post" : "Like post"}
-            className="gap-2"
+            title={likeState.liked ? "Unlike" : "Like"}
+            className={actionButtonClass}
             onClick={handleToggleLike}
           >
             <span
@@ -308,9 +510,9 @@ export function PostCard({
               className="motion-safe:animate-[heart-pop_280ms_ease-out_1] flex items-center"
             >
               {likeState.liked ? (
-                <IconHeartFilled className="text-rose-500" />
+                <IconHeartFilled className="text-rose-500/90" />
               ) : (
-                <IconHeart className="text-muted-foreground" />
+                <IconHeart className="text-muted-foreground/80" />
               )}
             </span>
             <span className="text-xs font-medium tabular-nums">
@@ -328,12 +530,11 @@ export function PostCard({
             <DropdownMenuTrigger asChild>
               <Button
                 size="xs"
-                variant="outline"
+                variant="ghost"
                 aria-pressed={retweetState.retweeted}
-                aria-label={
-                  retweetState.retweeted ? "Repost menu" : "Repost menu"
-                }
-                className="gap-2"
+                aria-label={retweetState.retweeted ? "Undo repost" : "Repost"}
+                title={retweetState.retweeted ? "Undo repost" : "Repost"}
+                className={actionButtonClass}
               >
                 <span
                   key={retweetPulseKey}
@@ -341,8 +542,8 @@ export function PostCard({
                 >
                   <IconRepeat
                     className={cn(
-                      "text-muted-foreground transition-colors duration-150",
-                      retweetState.retweeted ? "text-emerald-600" : "",
+                      "text-muted-foreground/80 transition-colors duration-150",
+                      retweetState.retweeted ? "text-emerald-600/90" : "",
                     )}
                   />
                 </span>
@@ -372,20 +573,41 @@ export function PostCard({
           <Button
             size="xs"
             disabled={bookmarkBusy}
-            variant="outline"
+            variant="ghost"
             aria-pressed={bookmarked}
             aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
-            className="gap-2"
+            title={bookmarked ? "Remove bookmark" : "Add bookmark"}
+            className={actionButtonClass}
             onClick={handleToggleBookmark}
           >
             {bookmarked ? (
-              <IconBookmarkFilled className="text-blue-500" />
+              <IconBookmarkFilled className="text-blue-500/90" />
             ) : (
-              <IconBookmark className="text-muted-foreground" />
+              <IconBookmark className="text-muted-foreground/80" />
             )}
           </Button>
+          <Button
+            size="xs"
+            variant="ghost"
+            className={cn(
+              "min-w-[88px] justify-center gap-1.5 rounded-full border-0 bg-transparent shadow-none transition-colors duration-150 hover:bg-muted/70",
+              isTimeline ? "h-7 px-1.5" : "h-8 px-2",
+            )}
+            title="Comment"
+            onClick={() => {
+              if (onCommentClick) {
+                onCommentClick();
+                return;
+              }
+              openPostDetail({ focusCommentComposer: true });
+            }}
+            aria-label={`Open post ${post.id} comments`}
+          >
+            <IconMessageCircle />
+            Comment
+          </Button>
         </div>
-        {isOwner ? (
+        {canShowActions ? (
           <div className="ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -393,23 +615,26 @@ export function PostCard({
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Post actions"
+                  title="More"
                   disabled={pending}
                 >
                   <IconDotsVertical className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setEditing(true);
-                    setDraft(post.content);
-                    setError(null);
-                  }}
-                >
-                  <IconEdit className="h-4 w-4" aria-hidden="true" />
-                  Edit
-                </DropdownMenuItem>
-                {onDelete ? (
+                {isOwner ? (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setEditing(true);
+                      setDraft(post.content);
+                      setError(null);
+                    }}
+                  >
+                    <IconEdit className="h-4 w-4" aria-hidden="true" />
+                    Edit
+                  </DropdownMenuItem>
+                ) : null}
+                {onDelete && canShowActions ? (
                   <DropdownMenuItem
                     variant="destructive"
                     onSelect={() => setDeleteOpen(true)}
@@ -423,7 +648,126 @@ export function PostCard({
           </div>
         ) : null}
       </CardFooter>
-      {onDelete ? (
+      {isTimeline && !(showCommentPreview && post.top_comment_preview) ? (
+        <Separator className="bg-border/60" />
+      ) : null}
+      {showCommentPreview && topCommentPreview ? (
+        <div
+          className={cn(
+            "transition-colors duration-150 cursor-pointer",
+            isTimeline
+              ? timelineTopCommentClass
+              : "rounded-lg border border-border/50 bg-muted/15 px-3 py-2 hover:bg-muted/30",
+          )}
+          role="button"
+          tabIndex={0}
+          onClick={(event) => {
+            if (
+              event.target instanceof HTMLElement &&
+              event.target.closest(
+                "a,button,input,textarea,select,label,[role='menuitem'],[data-no-post-open='true']",
+              )
+            ) {
+              return;
+            }
+            event.stopPropagation();
+            openComments();
+          }}
+          onKeyDown={(event) => {
+            if (
+              event.target instanceof HTMLElement &&
+              event.target.closest(
+                "a,button,input,textarea,select,label,[role='menuitem'],[data-no-post-open='true']",
+              )
+            ) {
+              return;
+            }
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              openComments();
+            }
+          }}
+        >
+          <div className="min-w-0">
+            <ProfileHoverCard
+              username={topCommentPreview.user.username}
+              userId={topCommentPreview.user.id}
+              avatarUrl={topCommentPreview.user.avatar_url ?? null}
+            >
+              <Link
+                to={`/profile/${encodeURIComponent(topCommentPreview.user.username)}`}
+                className="inline-flex max-w-full items-center gap-2 text-sm font-semibold"
+                aria-label={`Open profile card for @${topCommentPreview.user.username}`}
+              >
+                <Avatar className="size-7">
+                  {topCommentPreview.user.avatar_url ? (
+                    <AvatarImage
+                      src={topCommentPreview.user.avatar_url}
+                      alt={topCommentPreview.user.username}
+                    />
+                  ) : null}
+                  <AvatarFallback className="text-[10px] font-semibold">
+                    {(topCommentPreview.user.username || "?")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                @{topCommentPreview.user.username}
+              </Link>
+            </ProfileHoverCard>
+            <div
+              className="mt-1 pl-9 text-sm leading-5 break-words text-muted-foreground line-clamp-2"
+              title={topCommentPreview.content}
+            >
+              {topCommentSnippet}
+            </div>
+            <div className="mt-1.5 pl-9 flex items-center justify-between gap-3">
+              <div className="text-muted-foreground/70 text-[11px]">
+                {topCommentTimeLabel}
+              </div>
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                className="h-6 gap-1 rounded-full px-1.5 text-muted-foreground/80 hover:bg-muted/50"
+                aria-pressed={topCommentLikeState?.liked ?? false}
+                aria-label={
+                  topCommentLikeState?.liked
+                    ? `Unlike top comment (${topCommentLikeState.count})`
+                    : `Like top comment (${topCommentLikeState?.count ?? 0})`
+                }
+                disabled={
+                  topCommentLikeBusy ||
+                  (toggleCommentLikeMutation.isPending &&
+                    toggleCommentLikeMutation.variables?.commentId ===
+                      topCommentPreview.id)
+                }
+                onClick={handleToggleTopCommentLike}
+              >
+                <span
+                  key={topCommentLikePulseKey}
+                  className="motion-safe:animate-[heart-pop_280ms_ease-out_1] flex items-center"
+                >
+                  {topCommentLikeState?.liked ? (
+                    <IconHeartFilled className="h-3.5 w-3.5 text-rose-500/90" />
+                  ) : (
+                    <IconHeart className="h-3.5 w-3.5" />
+                  )}
+                </span>
+                <span className="text-[11px] tabular-nums">
+                  <AnimatedCount
+                    direction={topCommentLikeCountDirection}
+                    value={topCommentLikeState?.count ?? 0}
+                    animationKey={topCommentLikeCountKey}
+                  />
+                </span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {onDelete && canShowActions ? (
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
@@ -452,28 +796,5 @@ export function PostCard({
         </AlertDialog>
       ) : null}
     </Card>
-  );
-}
-
-type AnimatedCountProps = {
-  value: number;
-  direction: "up" | "down";
-  animationKey: number;
-};
-
-function AnimatedCount({ value, direction, animationKey }: AnimatedCountProps) {
-  const animationClass =
-    animationKey > 0
-      ? direction === "up"
-        ? "motion-safe:animate-[count-slide-up_160ms_ease-out_1]"
-        : "motion-safe:animate-[count-slide-down_160ms_ease-out_1]"
-      : "";
-
-  return (
-    <span className="inline-flex h-4 min-w-[1.5ch] items-center justify-center overflow-hidden tabular-nums">
-      <span key={animationKey} className={animationClass}>
-        {value}
-      </span>
-    </span>
   );
 }

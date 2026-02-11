@@ -35,6 +35,28 @@ def get_feed(client, token: str, view: str):
     )
 
 
+def get_post_with_counts(client, token: str, post_id: int):
+    return client.get(
+        f"/posts/{post_id}/with_counts",
+        headers=auth_headers(token),
+    )
+
+
+def create_comment(client, token: str, post_id: int, content: str):
+    return client.post(
+        f"/posts/{post_id}/comments",
+        json={"content": content},
+        headers=auth_headers(token),
+    )
+
+
+def like_comment(client, token: str, comment_id: int):
+    return client.post(
+        f"/comments/{comment_id}/like",
+        headers=auth_headers(token),
+    )
+
+
 def test_create_post_appears_in_feed(client):
     suffix = uuid.uuid4().hex[:8]
     username = f"user_{suffix}"
@@ -98,3 +120,70 @@ def test_subsriptions_feed_filters_by_following(client):
     assert subs_after.status_code == 200
     posts_after = subs_after.json()
     assert any(p["content"] == content_b for p in posts_after)
+
+
+def test_get_post_with_counts_by_id(client):
+    suffix = uuid.uuid4().hex[:8]
+    username = f"user_{suffix}"
+    email = f"{username}@example.com"
+    password = "test-password"
+
+    reg = register_user(client, username, email, password)
+    assert reg.status_code == 200
+
+    token = login_user(client, username, password).json()["access_token"]
+    created = create_post(client, token, "hello detail endpoint")
+    assert created.status_code == 200
+    post_id = created.json()["id"]
+
+    post_detail = get_post_with_counts(client, token, post_id)
+    assert post_detail.status_code == 200
+    data = post_detail.json()
+    assert data["id"] == post_id
+    assert data["content"] == "hello detail endpoint"
+    assert data["owner_username"] == username
+
+    missing = get_post_with_counts(client, token, 999999)
+    assert missing.status_code == 404
+
+
+def test_feed_returns_top_comment_preview(client):
+    suffix = uuid.uuid4().hex[:8]
+    author = f"author_{suffix}"
+    liker = f"liker_{suffix}"
+
+    reg_author = register_user(client, author, f"{author}@example.com", "pass-author")
+    reg_liker = register_user(client, liker, f"{liker}@example.com", "pass-liker")
+    assert reg_author.status_code == 200
+    assert reg_liker.status_code == 200
+
+    token_author = login_user(client, author, "pass-author").json()["access_token"]
+    token_liker = login_user(client, liker, "pass-liker").json()["access_token"]
+
+    created_post = create_post(client, token_author, "post with comments")
+    assert created_post.status_code == 200
+    post_id = created_post.json()["id"]
+
+    low = create_comment(client, token_author, post_id, "less liked comment")
+    high = create_comment(client, token_author, post_id, "top liked comment")
+    assert low.status_code == 200
+    assert high.status_code == 200
+
+    assert like_comment(client, token_liker, high.json()["id"]).status_code == 204
+
+    feed = get_feed(client, token_author, view="public")
+    assert feed.status_code == 200
+    post = next((p for p in feed.json() if p["id"] == post_id), None)
+    assert post is not None
+    assert post["top_comment_preview"] is not None
+    assert post["top_comment_preview"]["content"] == "top liked comment"
+    assert post["top_comment_preview"]["like_count"] == 1
+    assert post["top_comment_preview"]["is_liked"] is False
+    assert post["top_comment_preview"]["user"]["username"] == author
+
+    feed_liker = get_feed(client, token_liker, view="public")
+    assert feed_liker.status_code == 200
+    post_for_liker = next((p for p in feed_liker.json() if p["id"] == post_id), None)
+    assert post_for_liker is not None
+    assert post_for_liker["top_comment_preview"] is not None
+    assert post_for_liker["top_comment_preview"]["is_liked"] is True

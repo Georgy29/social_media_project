@@ -15,6 +15,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     created_at: datetime
+    is_admin: bool = False
     avatar_url: Optional[str] = None
     cover_url: Optional[str] = None
     bio: Optional[str] = None
@@ -46,6 +47,17 @@ class UserPreview(BaseModel):
     username: str
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PostTopCommentPreview(BaseModel):
+    id: int
+    content: str
+    like_count: int
+    is_liked: bool = False
+    created_at: datetime
+    user: UserPreview
 
 
 class MutualsPreview(BaseModel):
@@ -99,6 +111,7 @@ class PostWithCounts(Post):
     is_retweeted: bool
     is_bookmarked: bool
     media_url: Optional[str] = None
+    top_comment_preview: Optional[PostTopCommentPreview] = None
 
 
 class TimelineItem(BaseModel):
@@ -157,3 +170,39 @@ class MediaCompleteResponse(BaseModel):
 
 class SuggestionsResponse(BaseModel):
     suggestions: List[UserPreview]
+
+
+# comment schemas
+class CommentBase(BaseModel):
+    content: str
+
+
+class CommentCreate(CommentBase):
+    parent_id: Optional[int] = None
+    reply_to_comment_id: Optional[int] = None
+    reply_to_user_id: Optional[int] = None
+
+
+class CommentUpdate(CommentBase):
+    pass
+
+
+class CommentResponse(BaseModel):
+    id: int
+    post_id: int
+    user: UserPreview
+    parent_id: Optional[int] = None
+    reply_to_comment_id: Optional[int] = None
+    reply_to_user: Optional[UserPreview] = None
+    content: str
+    like_count: int
+    is_liked: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CommentListResponse(BaseModel):
+    items: List[CommentResponse]
+    next_cursor: Optional[str] = None

@@ -1,12 +1,11 @@
-import { useCallback, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { IconArrowLeft } from "@tabler/icons-react";
 
 import { PostComposerDialog } from "@/components/PostComposerDialog";
 import { ProfileEditDialog } from "@/components/ProfileEditDialog";
 import { ProfileHeader } from "@/components/ProfileHeader";
-import { type PostWithCounts } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
 import { LogoutDialogContent } from "@/components/layout/LogoutDialogContent";
@@ -20,47 +19,48 @@ import { ProfileRightRail } from "@/components/sidebar/ProfileRightRail";
 import { getSidebarUser } from "@/components/sidebar/sidebar-user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePostCardActions } from "@/hooks/usePostCardActions";
 
 import { type ApiError } from "@/api/client";
+import { formatDate } from "@/lib/date";
+import { getRouteScrollKey, restoreRouteScroll } from "@/lib/route-scroll";
 import {
   useCreatePostMutation,
-  useDeletePostMutation,
   useLogout,
   useMeQuery,
   useToggleFollowMutation,
-  useToggleBookmarkMutation,
-  useToggleLikeMutation,
-  useToggleRetweetMutation,
-  useUpdatePostMutation,
   useUserProfileQuery,
 } from "@/api/queries";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const logout = useLogout();
   const { username } = useParams();
   const meQuery = useMeQuery();
+  const restoredRouteRef = useRef<string | null>(null);
   const profileQuery = useUserProfileQuery(username);
   const createPostMutation = useCreatePostMutation();
-  const updatePostMutation = useUpdatePostMutation();
-  const deletePostMutation = useDeletePostMutation();
   const toggleFollowMutation = useToggleFollowMutation();
-  const toggleLikeMutation = useToggleLikeMutation();
-  const toggleRetweetMutation = useToggleRetweetMutation();
-  const toggleBookmarkMutation = useToggleBookmarkMutation();
+  const {
+    isPostMutating,
+    handleToggleLike,
+    handleToggleRetweet,
+    handleToggleBookmark,
+    handleUpdatePost,
+    handleDeletePost,
+  } = usePostCardActions();
   const [composerOpen, setComposerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   const profile = profileQuery.data;
-  const joinedLabel = (() => {
-    if (!profile?.created_at) return null;
-    const ts = new Date(profile.created_at);
-    if (Number.isNaN(ts.valueOf())) return null;
-    return ts.toLocaleDateString();
-  })();
+  const joinedLabel = profile?.created_at
+    ? formatDate(profile.created_at)
+    : null;
   const isOwner = Boolean(
     profile?.username && meQuery.data?.username === profile.username,
   );
+  const isAdmin = Boolean(meQuery.data?.is_admin);
   const isFollowedByViewer = profile?.is_followed_by_viewer ?? false;
   const profileAvatarUrl =
     profile?.avatar_url ?? (isOwner ? meQuery.data?.avatar_url : null);
@@ -73,6 +73,13 @@ export default function ProfilePage() {
     avatarAlt: "Your avatar",
     avatarFallback: "ME",
   });
+  const routeKey = getRouteScrollKey(location.pathname, location.search);
+
+  useEffect(() => {
+    if (restoredRouteRef.current === routeKey) return;
+    restoredRouteRef.current = routeKey;
+    restoreRouteScroll(routeKey);
+  }, [routeKey]);
 
   const handleLogout = () => {
     logout();
@@ -90,66 +97,6 @@ export default function ProfilePage() {
     navigate("/feed");
   };
 
-  const isPostMutating = useCallback(
-    (postId: number) =>
-      (updatePostMutation.isPending &&
-        updatePostMutation.variables?.postId === postId) ||
-      (deletePostMutation.isPending &&
-        deletePostMutation.variables?.postId === postId) ||
-      (toggleLikeMutation.isPending &&
-        toggleLikeMutation.variables?.postId === postId) ||
-      (toggleRetweetMutation.isPending &&
-        toggleRetweetMutation.variables?.postId === postId) ||
-      (toggleBookmarkMutation.isPending &&
-        toggleBookmarkMutation.variables?.postId === postId),
-    [
-      updatePostMutation.isPending,
-      updatePostMutation.variables?.postId,
-      deletePostMutation.isPending,
-      deletePostMutation.variables?.postId,
-      toggleLikeMutation.isPending,
-      toggleLikeMutation.variables?.postId,
-      toggleRetweetMutation.isPending,
-      toggleRetweetMutation.variables?.postId,
-      toggleBookmarkMutation.isPending,
-      toggleBookmarkMutation.variables?.postId,
-    ],
-  );
-
-  const handleToggleLike = useCallback(
-    (post: PostWithCounts) => {
-      toggleLikeMutation.mutate({ postId: post.id, isLiked: post.is_liked });
-    },
-    [toggleLikeMutation],
-  );
-
-  const handleToggleRetweet = useCallback(
-    (post: PostWithCounts) => {
-      toggleRetweetMutation.mutate(
-        { postId: post.id, isRetweeted: post.is_retweeted },
-        {
-          onSuccess: () => {
-            toast.success(post.is_retweeted ? "Repost removed" : "Reposted");
-          },
-          onError: (e: ApiError) => {
-            toast.error(e.message);
-          },
-        },
-      );
-    },
-    [toggleRetweetMutation],
-  );
-
-  const handleToggleBookmark = useCallback(
-    async (post: PostWithCounts, nextState: boolean) => {
-      await toggleBookmarkMutation.mutateAsync({
-        postId: post.id,
-        nextState,
-      });
-    },
-    [toggleBookmarkMutation],
-  );
-
   const handleToggleFollow = useCallback(() => {
     if (!profile) return;
     toggleFollowMutation.mutate({
@@ -158,39 +105,6 @@ export default function ProfilePage() {
       isFollowed: isFollowedByViewer,
     });
   }, [profile, toggleFollowMutation, isFollowedByViewer]);
-
-  const handleUpdatePost = useCallback(
-    async (postId: number, content: string) => {
-      try {
-        await updatePostMutation.mutateAsync({
-          postId,
-          payload: { content },
-        });
-        toast.success("Updated");
-      } catch (e) {
-        const error = e as ApiError;
-        toast.error(error.message);
-        throw e;
-      }
-    },
-    [updatePostMutation],
-  );
-
-  const handleDeletePost = useCallback(
-    async (postId: number) => {
-      try {
-        await deletePostMutation.mutateAsync({
-          postId,
-        });
-        toast.success("Deleted");
-      } catch (e) {
-        const error = e as ApiError;
-        toast.error(error.message);
-        throw e;
-      }
-    },
-    [deletePostMutation],
-  );
 
   const handleCreatePost = async (content: string, mediaId: number | null) => {
     const payload = mediaId ? { content, media_id: mediaId } : { content };
@@ -275,6 +189,7 @@ export default function ProfilePage() {
             key={username ?? "profile"}
             username={username}
             meId={meQuery.data?.id}
+            meIsAdmin={isAdmin}
             onToggleLike={handleToggleLike}
             onToggleRetweet={handleToggleRetweet}
             onToggleBookmark={handleToggleBookmark}

@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PostComposerDialog } from "@/components/PostComposerDialog";
-import { PostCard, type PostWithCounts } from "@/components/PostCard";
+import { PostCard } from "@/components/PostCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
 import { LogoutDialogContent } from "@/components/layout/LogoutDialogContent";
@@ -15,24 +15,23 @@ import { FeedRightRail } from "@/components/sidebar/FeedRightRail";
 import { getSidebarUser } from "@/components/sidebar/sidebar-user";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { usePostCardActions } from "@/hooks/usePostCardActions";
 
 import { type ApiError } from "@/api/client";
+import { getRouteScrollKey, restoreRouteScroll } from "@/lib/route-scroll";
 import {
   useBookmarksQuery,
   useCreatePostMutation,
-  useDeletePostMutation,
   useLogout,
   useMeQuery,
-  useToggleBookmarkMutation,
-  useToggleLikeMutation,
-  useToggleRetweetMutation,
-  useUpdatePostMutation,
 } from "@/api/queries";
 
 export default function BookmarksPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const logout = useLogout();
   const meQuery = useMeQuery();
+  const restoredRouteRef = useRef<string | null>(null);
 
   const [page, setPage] = useState(0);
   const limit = 10;
@@ -40,13 +39,17 @@ export default function BookmarksPage() {
 
   const bookmarksQuery = useBookmarksQuery(params);
   const createPostMutation = useCreatePostMutation();
-  const updatePostMutation = useUpdatePostMutation();
-  const deletePostMutation = useDeletePostMutation();
-  const toggleLikeMutation = useToggleLikeMutation();
-  const toggleRetweetMutation = useToggleRetweetMutation();
-  const toggleBookmarkMutation = useToggleBookmarkMutation();
+  const {
+    isPostMutating,
+    handleToggleLike,
+    handleToggleRetweet,
+    handleToggleBookmark,
+    handleUpdatePost,
+    handleDeletePost,
+  } = usePostCardActions();
   const [composerOpen, setComposerOpen] = useState(false);
   const username = meQuery.data?.username ?? "guest";
+  const isAdmin = Boolean(meQuery.data?.is_admin);
   const sidebarUser = getSidebarUser(meQuery.data, {
     name: username,
     handle: username,
@@ -55,6 +58,13 @@ export default function BookmarksPage() {
   const profilePath = meQuery.data?.username
     ? `/profile/${meQuery.data.username}`
     : "/feed";
+  const routeKey = getRouteScrollKey(location.pathname, location.search);
+
+  useEffect(() => {
+    if (restoredRouteRef.current === routeKey) return;
+    restoredRouteRef.current = routeKey;
+    restoreRouteScroll(routeKey);
+  }, [routeKey]);
 
   const isRefreshing =
     bookmarksQuery.isFetching && bookmarksQuery.isPlaceholderData;
@@ -64,97 +74,6 @@ export default function BookmarksPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, []);
-
-  const isPostMutating = useCallback(
-    (postId: number) =>
-      (updatePostMutation.isPending &&
-        updatePostMutation.variables?.postId === postId) ||
-      (deletePostMutation.isPending &&
-        deletePostMutation.variables?.postId === postId) ||
-      (toggleLikeMutation.isPending &&
-        toggleLikeMutation.variables?.postId === postId) ||
-      (toggleRetweetMutation.isPending &&
-        toggleRetweetMutation.variables?.postId === postId) ||
-      (toggleBookmarkMutation.isPending &&
-        toggleBookmarkMutation.variables?.postId === postId),
-    [
-      updatePostMutation.isPending,
-      updatePostMutation.variables?.postId,
-      deletePostMutation.isPending,
-      deletePostMutation.variables?.postId,
-      toggleLikeMutation.isPending,
-      toggleLikeMutation.variables?.postId,
-      toggleRetweetMutation.isPending,
-      toggleRetweetMutation.variables?.postId,
-      toggleBookmarkMutation.isPending,
-      toggleBookmarkMutation.variables?.postId,
-    ],
-  );
-
-  const handleToggleLike = useCallback(
-    (post: PostWithCounts) => {
-      toggleLikeMutation.mutate({ postId: post.id, isLiked: post.is_liked });
-    },
-    [toggleLikeMutation],
-  );
-
-  const handleToggleRetweet = useCallback(
-    (post: PostWithCounts) => {
-      toggleRetweetMutation.mutate(
-        { postId: post.id, isRetweeted: post.is_retweeted },
-        {
-          onSuccess: () => {
-            toast.success(post.is_retweeted ? "Repost removed" : "Reposted");
-          },
-          onError: (e: ApiError) => {
-            toast.error(e.message);
-          },
-        },
-      );
-    },
-    [toggleRetweetMutation],
-  );
-
-  const handleToggleBookmark = useCallback(
-    async (post: PostWithCounts, nextState: boolean) => {
-      await toggleBookmarkMutation.mutateAsync({
-        postId: post.id,
-        nextState,
-      });
-    },
-    [toggleBookmarkMutation],
-  );
-
-  const handleUpdatePost = useCallback(
-    async (postId: number, content: string) => {
-      try {
-        await updatePostMutation.mutateAsync({
-          postId,
-          payload: { content },
-        });
-        toast.success("Updated");
-      } catch (e) {
-        const error = e as ApiError;
-        toast.error(error.message);
-        throw e;
-      }
-    },
-    [updatePostMutation],
-  );
-
-  const handleDeletePost = useCallback(
-    async (postId: number) => {
-      try {
-        await deletePostMutation.mutateAsync({ postId });
-        toast.success("Deleted");
-      } catch (e) {
-        const error = e as ApiError;
-        toast.error(error.message);
-        throw e;
-      }
-    },
-    [deletePostMutation],
-  );
 
   const handleCreatePost = async (content: string, mediaId: number | null) => {
     const payload = mediaId ? { content, media_id: mediaId } : { content };
@@ -226,6 +145,7 @@ export default function BookmarksPage() {
                   post={post}
                   pending={isPostMutating(post.id)}
                   isOwner={meQuery.data?.id === post.owner_id}
+                  canDelete={isAdmin}
                   onToggleLike={handleToggleLike}
                   onToggleRetweet={handleToggleRetweet}
                   onToggleBookmark={handleToggleBookmark}

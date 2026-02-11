@@ -159,7 +159,7 @@ function CommentItem({
 
       <div
         className={cn(
-          "whitespace-pre-wrap break-words text-sm leading-6",
+          "whitespace-pre-wrap break-words text-sm leading-6 text-foreground",
           nested ? "pl-9" : "pl-10",
         )}
       >

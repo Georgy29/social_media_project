@@ -102,13 +102,13 @@ def create_comment(
 
     if parent_id is None:
         # top-level comment
-        if reply_to_comment_id or reply_to_user_id:
+        if reply_to_comment_id is not None or reply_to_user_id is not None:
             exceptions.raise_bad_request_exception(
                 "reply_to_* must be null for top-level comments"
             )
     else:
         parent = _ensure_top_level_comment(db, post_id, parent_id)
-        if reply_to_comment_id:
+        if reply_to_comment_id is not None:
             reply_to_user_id, reply_to_comment_id = _ensure_reply_target(
                 db, post_id, parent.id, reply_to_comment_id, reply_to_user_id
             )

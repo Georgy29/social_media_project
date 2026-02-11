@@ -178,3 +178,61 @@ def test_like_unlike_missing_comment_returns_not_found(client):
     )
     assert like_res.status_code == 404
     assert unlike_res.status_code == 404
+
+
+def test_top_level_comment_rejects_reply_to_fields_even_if_zero(client):
+    suffix = uuid.uuid4().hex[:8]
+    author = f"author_{suffix}"
+
+    reg_author = register_user(client, author, f"{author}@example.com", "pass-author")
+    assert reg_author.status_code == 200
+    token_author = login_user(client, author, "pass-author").json()["access_token"]
+
+    post = create_post(client, token_author, "post for comments")
+    assert post.status_code == 200
+    post_id = post.json()["id"]
+
+    res_reply_to_comment_zero = create_comment(
+        client,
+        token_author,
+        post_id,
+        "should fail",
+        reply_to_comment_id=0,
+    )
+    assert res_reply_to_comment_zero.status_code == 400
+
+    res_reply_to_user_zero = create_comment(
+        client,
+        token_author,
+        post_id,
+        "should fail",
+        reply_to_user_id=0,
+    )
+    assert res_reply_to_user_zero.status_code == 400
+
+
+def test_reply_with_invalid_reply_to_comment_id_returns_400(client):
+    suffix = uuid.uuid4().hex[:8]
+    author = f"author_{suffix}"
+
+    reg_author = register_user(client, author, f"{author}@example.com", "pass-author")
+    assert reg_author.status_code == 200
+    token_author = login_user(client, author, "pass-author").json()["access_token"]
+
+    post = create_post(client, token_author, "post for comments")
+    assert post.status_code == 200
+    post_id = post.json()["id"]
+
+    parent = create_comment(client, token_author, post_id, "parent")
+    assert parent.status_code == 200
+    parent_id = parent.json()["id"]
+
+    bad_reply = create_comment(
+        client,
+        token_author,
+        post_id,
+        "bad reply",
+        parent_id=parent_id,
+        reply_to_comment_id=0,
+    )
+    assert bad_reply.status_code == 400

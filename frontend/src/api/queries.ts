@@ -374,9 +374,13 @@ export function useUpdatePostMutation() {
 
   return useMutation<Post, ApiError, { postId: number; payload: PostUpdate }>({
     mutationFn: ({ postId, payload }) => updatePost(postId, payload),
-    onSuccess: () => {
+    onSuccess: (_post, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
       void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.root });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.post.detail(variables.postId),
+      });
     },
   });
 }
@@ -386,9 +390,13 @@ export function useDeletePostMutation() {
 
   return useMutation<void, ApiError, { postId: number }>({
     mutationFn: ({ postId }) => deletePost(postId),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feed.root });
       void queryClient.invalidateQueries({ queryKey: queryKeys.timeline.root });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks.root });
+      queryClient.removeQueries({
+        queryKey: queryKeys.post.detail(variables.postId),
+      });
     },
   });
 }
